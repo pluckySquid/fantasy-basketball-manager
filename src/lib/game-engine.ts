@@ -58,8 +58,9 @@ export function teamStrength(team: TeamWithRoster) {
     starters.reduce((sum, player) => sum + (player ? player.stamina : 0), 0) / Math.max(starters.length, 1);
   const moraleBonus =
     team.players.reduce((sum, player) => sum + player.morale, 0) / Math.max(team.players.length, 1);
+  const staffBonus = team.trainingLevel * 4 + team.medicalLevel * 3 + team.scoutingLevel * 2;
 
-  return starterImpact + benchImpact + staminaBonus * 0.16 + moraleBonus * 0.08;
+  return starterImpact + benchImpact + staminaBonus * 0.16 + moraleBonus * 0.08 + staffBonus;
 }
 
 function randomSwing(size: number) {

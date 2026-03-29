@@ -6,6 +6,9 @@ export type TeamState = {
   city: string;
   abbreviation: string;
   budget: number;
+  trainingLevel: number;
+  medicalLevel: number;
+  scoutingLevel: number;
   wins: number;
   losses: number;
   pointsFor: number;
@@ -56,6 +59,7 @@ export type UserProfileState = {
   managerName: string;
   favoriteTeamId: string;
   seasonId: string;
+  credits: number;
 };
 
 export type LineupSlots = {

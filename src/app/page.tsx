@@ -1,8 +1,7 @@
-import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
-import { ResetLeagueButton, SimulateRoundButton } from "@/components/action-forms";
-import { MetricCard, SectionCard } from "@/components/ui";
-import { getGameSnapshot } from "@/lib/game-state";
+import { ResetLeagueButton, SimulateRoundButton, StaffUpgradeButton } from "@/components/action-forms";
+import { MetricCard, PlayerShowcaseCard, SectionCard } from "@/components/ui";
+import { getGameSnapshot, getStaffDepartments } from "@/lib/game-state";
 
 export default async function Home() {
   const snapshot = await getGameSnapshot();
@@ -11,6 +10,7 @@ export default async function Home() {
     snapshot.profile.season.status === "COMPLETE"
       ? "Season complete"
       : `Round ${snapshot.pendingRound} is next`;
+  const staffDepartments = getStaffDepartments(snapshot.favoriteTeam);
 
   return (
     <AppShell
@@ -22,7 +22,7 @@ export default async function Home() {
           <section className="grid gap-4 md:grid-cols-3">
             <MetricCard label="Record" value={record} caption="League place updates after each simulated round." />
             <MetricCard label="Team Strength" value={String(snapshot.favoriteTeamStrength)} caption="Weighted from your active lineup, stamina, and morale." />
-            <MetricCard label="Season Status" value={nextRoundLabel} caption={`${snapshot.profile.season.name} • ${snapshot.profile.managerName}`} />
+            <MetricCard label="Club Credits" value={String(snapshot.profile.credits)} caption={`${snapshot.profile.season.name} | ${snapshot.profile.managerName} | ${nextRoundLabel}`} />
           </section>
 
           <SectionCard title="Recent Results" actionLabel="Full schedule" actionHref="/schedule">
@@ -51,26 +51,7 @@ export default async function Home() {
           <SectionCard title="Roster Core" actionLabel="View roster" actionHref="/roster">
             <div className="grid gap-3 md:grid-cols-2">
               {snapshot.favoriteTeam.players.slice(0, 4).map((player) => (
-                <Link
-                  key={player.id}
-                  href={`/players/${player.id}`}
-                  className="rounded-2xl border border-white/10 bg-white/5 p-4 transition hover:border-amber-300/40 hover:bg-white/8"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-lg font-semibold text-white">
-                        {player.firstName} {player.lastName}
-                      </p>
-                      <p className="text-sm text-slate-300">
-                        {player.position} • Age {player.age}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl bg-amber-300/15 px-3 py-2 text-right">
-                      <p className="text-xs uppercase tracking-[0.2em] text-amber-200">OVR</p>
-                      <p className="text-xl font-semibold text-white">{player.overall}</p>
-                    </div>
-                  </div>
-                </Link>
+                <PlayerShowcaseCard key={player.id} player={player} href={`/players/${player.id}`} />
               ))}
             </div>
           </SectionCard>
@@ -81,6 +62,29 @@ export default async function Home() {
             <div className="grid gap-4">
               <SimulateRoundButton disabled={snapshot.profile.season.status === "COMPLETE"} />
               <ResetLeagueButton />
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Club Staff">
+            <div className="grid gap-4">
+              {staffDepartments.map((department) => (
+                <article key={department.key} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-lg font-semibold text-white">{department.label}</p>
+                      <p className="mt-1 text-sm text-slate-300">Level {department.level}</p>
+                      <p className="mt-2 text-sm text-slate-400">{department.impact}</p>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <StaffUpgradeButton
+                      department={department.key}
+                      label={department.label}
+                      cost={department.cost}
+                    />
+                  </div>
+                </article>
+              ))}
             </div>
           </SectionCard>
 

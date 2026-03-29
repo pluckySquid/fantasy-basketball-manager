@@ -102,6 +102,9 @@ function buildInitialState(): LeagueState {
     name: `${city} ${nickname}`,
     abbreviation,
     budget: 18000,
+    trainingLevel: 1,
+    medicalLevel: 1,
+    scoutingLevel: 1,
     wins: 0,
     losses: 0,
     pointsFor: 0,
@@ -139,7 +142,7 @@ function buildInitialState(): LeagueState {
 
   return {
     season: { id: seasonId, name: "Fictional League Season 1", currentRound: 1, totalRounds: 14, status: "IN_PROGRESS" },
-    profile: { id: randomUUID(), managerName: "Solo Manager", favoriteTeamId: teams[0].id, seasonId },
+    profile: { id: randomUUID(), managerName: "Solo Manager", favoriteTeamId: teams[0].id, seasonId, credits: 1200 },
     teams,
     players,
     lineups,
@@ -176,7 +179,16 @@ export async function resetLeague() {
 
 export async function ensureLeagueReady() {
   try {
-    await readLeagueState();
+    const state = await readLeagueState();
+    const favoriteTeam = state.teams[0];
+    if (
+      state.profile.credits === undefined ||
+      favoriteTeam?.trainingLevel === undefined ||
+      favoriteTeam?.medicalLevel === undefined ||
+      favoriteTeam?.scoutingLevel === undefined
+    ) {
+      await resetLeague();
+    }
   } catch {
     await resetLeague();
   }
@@ -206,6 +218,10 @@ export async function getGameSnapshot() {
     recentMatches: matches.filter((match) => match.played).slice(-5).reverse(),
     nextMatches: matches.filter((match) => !match.played).slice(0, 4),
   };
+}
+
+function staffUpgradeCost(level: number) {
+  return 300 + level * 220;
 }
 
 export async function saveFavoriteLineup(formData: FormData) {
@@ -239,6 +255,8 @@ export async function simulateNextRound() {
   }
 
   const roundMatches = state.matches.filter((match) => match.round === nextRound.round);
+  let favoriteTeamCredits = 0;
+
   for (const match of roundMatches) {
     const homeTeam = enrichTeam(state, match.homeTeamId);
     const awayTeam = enrichTeam(state, match.awayTeamId);
@@ -263,13 +281,84 @@ export async function simulateNextRound() {
       }
       return team;
     });
+
+    if (match.homeTeamId === state.profile.favoriteTeamId || match.awayTeamId === state.profile.favoriteTeamId) {
+      const favoriteWon =
+        (match.homeTeamId === state.profile.favoriteTeamId && homeWin) ||
+        (match.awayTeamId === state.profile.favoriteTeamId && !homeWin);
+      favoriteTeamCredits += favoriteWon ? 140 : 80;
+    }
   }
 
   const remaining = state.matches.filter((match) => !match.played).length;
   state.season.currentRound = remaining === 0 ? nextRound.round : nextRound.round + 1;
   state.season.status = remaining === 0 ? "COMPLETE" : "IN_PROGRESS";
+  state.profile.credits += favoriteTeamCredits;
   await writeLeagueState(state);
   return { ok: true as const, message: `Round ${nextRound.round} simulated.` };
+}
+
+export async function upgradeStaffDepartment(department: "training" | "medical" | "scouting") {
+  await ensureLeagueReady();
+  const state = await readLeagueState();
+  const team = state.teams.find((entry) => entry.id === state.profile.favoriteTeamId)!;
+  const currentLevel =
+    department === "training"
+      ? team.trainingLevel
+      : department === "medical"
+        ? team.medicalLevel
+        : team.scoutingLevel;
+  const cost = staffUpgradeCost(currentLevel);
+
+  if (state.profile.credits < cost) {
+    return { ok: false as const, message: `Not enough credits. ${department} upgrade costs ${cost}.` };
+  }
+
+  state.profile.credits -= cost;
+  state.teams = state.teams.map((entry) => {
+    if (entry.id !== state.profile.favoriteTeamId) {
+      return entry;
+    }
+
+    if (department === "training") {
+      return { ...entry, trainingLevel: entry.trainingLevel + 1 };
+    }
+
+    if (department === "medical") {
+      return { ...entry, medicalLevel: entry.medicalLevel + 1 };
+    }
+
+    return { ...entry, scoutingLevel: entry.scoutingLevel + 1 };
+  });
+
+  await writeLeagueState(state);
+  return { ok: true as const, message: `${department} staff upgraded to level ${currentLevel + 1}.` };
+}
+
+export function getStaffDepartments(team: LeagueState["teams"][number]) {
+  return [
+    {
+      key: "training",
+      label: "Training",
+      level: team.trainingLevel,
+      impact: "Improves squad development and overall readiness.",
+      cost: staffUpgradeCost(team.trainingLevel),
+    },
+    {
+      key: "medical",
+      label: "Medical",
+      level: team.medicalLevel,
+      impact: "Raises stamina contribution inside the simulation engine.",
+      cost: staffUpgradeCost(team.medicalLevel),
+    },
+    {
+      key: "scouting",
+      label: "Scouting",
+      level: team.scoutingLevel,
+      impact: "Boosts evaluation and tactical preparation before games.",
+      cost: staffUpgradeCost(team.scoutingLevel),
+    },
+  ] as const;
 }
 
 export async function getPlayerById(playerId: string) {

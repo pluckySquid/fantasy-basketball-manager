@@ -1,5 +1,42 @@
 import Link from "next/link";
 
+function playerTier(overall: number) {
+  if (overall >= 88) {
+    return { label: "Legend", styles: "bg-amber-300/20 text-amber-100 border-amber-300/30" };
+  }
+  if (overall >= 82) {
+    return { label: "Elite", styles: "bg-cyan-300/20 text-cyan-100 border-cyan-300/30" };
+  }
+  if (overall >= 76) {
+    return { label: "Starter", styles: "bg-emerald-300/20 text-emerald-100 border-emerald-300/30" };
+  }
+  return { label: "Rotation", styles: "bg-slate-300/10 text-slate-100 border-white/10" };
+}
+
+function playerArchetype({
+  scoring,
+  playmaking,
+  rebounding,
+  defense,
+}: {
+  scoring: number;
+  playmaking: number;
+  rebounding: number;
+  defense: number;
+}) {
+  const highest = Math.max(scoring, playmaking, rebounding, defense);
+  if (highest === playmaking) {
+    return "Floor General";
+  }
+  if (highest === defense) {
+    return "Stopper";
+  }
+  if (highest === rebounding) {
+    return "Glass Cleaner";
+  }
+  return "Shot Creator";
+}
+
 export function MetricCard({
   label,
   value,
@@ -55,5 +92,67 @@ export function RatingBar({ label, value }: { label: string; value: number }) {
         <div className="h-2 rounded-full bg-amber-300" style={{ width: `${value}%` }} />
       </div>
     </div>
+  );
+}
+
+export function PlayerShowcaseCard({
+  player,
+  href,
+}: {
+  player: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    position: string;
+    age: number;
+    overall: number;
+    scoring: number;
+    playmaking: number;
+    rebounding: number;
+    defense: number;
+    stamina: number;
+    salary: number;
+  };
+  href: string;
+}) {
+  const tier = playerTier(player.overall);
+  const archetype = playerArchetype(player);
+
+  return (
+    <Link
+      href={href}
+      className="group rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] p-5 shadow-lg shadow-slate-950/20 transition hover:-translate-y-1 hover:border-amber-300/40"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-[0.25em] text-slate-400">{player.position}</p>
+          <h3 className="mt-2 text-xl font-semibold text-white">
+            {player.firstName} {player.lastName}
+          </h3>
+          <p className="mt-1 text-sm text-slate-300">
+            {archetype} | Age {player.age}
+          </p>
+        </div>
+        <div className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${tier.styles}`}>
+          {tier.label}
+        </div>
+      </div>
+      <div className="mt-5 grid grid-cols-2 gap-3">
+        <div className="rounded-2xl bg-slate-950/70 p-3">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Overall</p>
+          <p className="mt-1 text-3xl font-semibold text-white">{player.overall}</p>
+        </div>
+        <div className="rounded-2xl bg-slate-950/70 p-3">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Salary</p>
+          <p className="mt-2 text-lg font-semibold text-white">${player.salary.toLocaleString()}</p>
+        </div>
+      </div>
+      <div className="mt-4 grid gap-3">
+        <RatingBar label="Scoring" value={player.scoring} />
+        <RatingBar label="Playmaking" value={player.playmaking} />
+        <RatingBar label="Rebounding" value={player.rebounding} />
+        <RatingBar label="Defense" value={player.defense} />
+      </div>
+    </Link>
   );
 }

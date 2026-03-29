@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
-import { SectionCard } from "@/components/ui";
+import { MetricCard, PlayerShowcaseCard, SectionCard } from "@/components/ui";
 import { getGameSnapshot } from "@/lib/game-state";
 
 export default async function RosterPage() {
@@ -11,7 +11,33 @@ export default async function RosterPage() {
       title="Team Roster"
       subtitle="Scout every contract on your roster, compare role fit, and jump into player cards for more detail."
     >
-      <SectionCard title={`${snapshot.favoriteTeam.name} Roster`}>
+      <section className="mb-5 grid gap-4 md:grid-cols-3">
+        <MetricCard
+          label="Payroll"
+          value={`$${snapshot.favoriteTeam.players.reduce((sum, player) => sum + player.salary, 0).toLocaleString()}`}
+          caption="Total salary commitment across the active roster."
+        />
+        <MetricCard
+          label="Average OVR"
+          value={String(Math.round(snapshot.favoriteTeam.players.reduce((sum, player) => sum + player.overall, 0) / snapshot.favoriteTeam.players.length))}
+          caption="Quick read on roster quality."
+        />
+        <MetricCard
+          label="Top Player"
+          value={`${snapshot.favoriteTeam.players[0].firstName} ${snapshot.favoriteTeam.players[0].lastName}`}
+          caption="Current leader by overall rating."
+        />
+      </section>
+
+      <SectionCard title={`${snapshot.favoriteTeam.name} Cards`}>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {snapshot.favoriteTeam.players.map((player) => (
+            <PlayerShowcaseCard key={player.id} player={player} href={`/players/${player.id}`} />
+          ))}
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Table View">
         <div className="overflow-hidden rounded-[24px] border border-white/10">
           <table className="min-w-full divide-y divide-white/10 text-left text-sm">
             <thead className="bg-white/5 text-xs uppercase tracking-[0.2em] text-slate-400">

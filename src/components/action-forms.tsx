@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { resetLeagueAction, saveLineupAction, simulateRoundAction } from "@/app/actions";
+import { resetLeagueAction, saveLineupAction, simulateRoundAction, upgradeStaffAction } from "@/app/actions";
 
 const initialState = { ok: true, message: "" };
 
@@ -94,6 +94,32 @@ export function LineupForm({
         </button>
         <p className={`text-sm ${state.ok ? "text-slate-300" : "text-rose-300"}`}>{state.message}</p>
       </div>
+    </form>
+  );
+}
+
+export function StaffUpgradeButton({
+  department,
+  label,
+  cost,
+}: {
+  department: "training" | "medical" | "scouting";
+  label: string;
+  cost: number;
+}) {
+  const [state, action, pending] = useActionState(upgradeStaffAction, initialState);
+
+  return (
+    <form action={action} className="space-y-2">
+      <input type="hidden" name="department" value={department} />
+      <button
+        type="submit"
+        disabled={pending}
+        className="w-full rounded-2xl bg-white/6 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {pending ? "Upgrading..." : `Upgrade ${label} (${cost} cr)`}
+      </button>
+      {state.message ? <p className={`text-xs ${state.ok ? "text-slate-400" : "text-rose-300"}`}>{state.message}</p> : null}
     </form>
   );
 }
