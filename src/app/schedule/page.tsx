@@ -36,10 +36,44 @@ export default async function SchedulePage() {
                     </p>
                   </div>
                   {match.played ? (
-                    <div className="mt-3 grid gap-2 text-sm text-slate-300 md:grid-cols-3">
-                      <p>{match.summary}</p>
-                      <p>{match.homeTopPerformer}</p>
-                      <p>{match.awayTopPerformer}</p>
+                    <div className="mt-3 grid gap-4 text-sm text-slate-300">
+                      <div className="grid gap-2 md:grid-cols-3">
+                        <p>{match.summary}</p>
+                        <p>{match.homeTopPerformer}</p>
+                        <p>{match.awayTopPerformer}</p>
+                      </div>
+
+                      <div className="grid gap-4 lg:grid-cols-2">
+                        {[
+                          { label: match.homeTeam.abbreviation, rows: match.homeBoxScore },
+                          { label: match.awayTeam.abbreviation, rows: match.awayBoxScore },
+                        ].map((box) => (
+                          <div key={`${match.id}-${box.label}`} className="overflow-hidden rounded-2xl border border-white/10">
+                            <table className="min-w-full divide-y divide-white/10 text-left text-xs">
+                              <thead className="bg-white/5 uppercase tracking-[0.2em] text-slate-400">
+                                <tr>
+                                  <th className="px-3 py-2">{box.label}</th>
+                                  <th className="px-3 py-2">PTS</th>
+                                  <th className="px-3 py-2">REB</th>
+                                  <th className="px-3 py-2">AST</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-white/10 bg-slate-950/60">
+                                {box.rows.map((line) => (
+                                  <tr key={`${match.id}-${box.label}-${line.playerId}`}>
+                                    <td className="px-3 py-2 text-white">
+                                      {line.player.firstName} {line.player.lastName}
+                                    </td>
+                                    <td className="px-3 py-2">{line.points}</td>
+                                    <td className="px-3 py-2">{line.rebounds}</td>
+                                    <td className="px-3 py-2">{line.assists}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ) : null}
                 </article>

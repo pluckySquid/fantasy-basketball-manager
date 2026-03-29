@@ -1,3 +1,6 @@
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
+import Image from "next/image";
 import Link from "next/link";
 
 function playerTier(overall: number) {
@@ -87,6 +90,10 @@ function portraitPalette(seed: string) {
   };
 }
 
+function portraitSlug(name: string) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
 export function PlayerPortrait({
   name,
   rarity,
@@ -110,9 +117,21 @@ export function PlayerPortrait({
         : rarity === "Silver"
           ? "rgba(226,232,240,0.24)"
           : "rgba(217,119,6,0.2)";
+  const slug = portraitSlug(name);
+  const portraitPath = `/portraits/${slug}.png`;
+  const localPortrait = resolve(process.cwd(), "public", "portraits", `${slug}.png`);
 
   return (
     <div className={`overflow-hidden rounded-[24px] border border-white/10 bg-slate-950/60 ${className}`}>
+      {existsSync(localPortrait) ? (
+        <Image
+          src={portraitPath}
+          alt={`${name} portrait`}
+          width={480}
+          height={400}
+          className="h-full w-full object-cover"
+        />
+      ) : (
       <svg viewBox="0 0 240 200" className="h-full w-full" role="img" aria-label={`${name} portrait`}>
         <defs>
           <linearGradient id={`bg-${hash}`} x1="0%" y1="0%" x2="100%" y2="100%">
@@ -145,6 +164,7 @@ export function PlayerPortrait({
         <path d="M 62 188 Q 92 136 120 142 Q 148 136 178 188" fill={`url(#jersey-${hash})`} />
         <path d="M 92 152 Q 120 168 148 152" fill="rgba(255,255,255,0.18)" />
       </svg>
+      )}
     </div>
   );
 }

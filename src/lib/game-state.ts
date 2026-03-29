@@ -315,6 +315,8 @@ function buildInitialState(): LeagueState {
       awayScore: null,
       homeTopPerformer: null,
       awayTopPerformer: null,
+      homeBoxScoreJson: null,
+      awayBoxScoreJson: null,
       summary: null,
     })),
   );
@@ -496,6 +498,8 @@ export async function ensureLeagueReady() {
       state.reservePlayers === undefined ||
       state.playerStats === undefined ||
       state.lastPackReveal === undefined ||
+      state.matches[0]?.homeBoxScoreJson === undefined ||
+      state.matches[0]?.awayBoxScoreJson === undefined ||
       state.players[0]?.rarity === undefined ||
       state.players[0]?.archetype === undefined ||
       state.players[0]?.potential === undefined
@@ -523,6 +527,18 @@ export async function getGameSnapshot() {
       ...match,
       homeTeam: teamLookup.get(match.homeTeamId)!,
       awayTeam: teamLookup.get(match.awayTeamId)!,
+      homeBoxScore: match.homeBoxScoreJson
+        ? (JSON.parse(match.homeBoxScoreJson) as PlayerGameLine[]).map((line) => ({
+            ...line,
+            player: playerLookup.get(line.playerId)!,
+          }))
+        : [],
+      awayBoxScore: match.awayBoxScoreJson
+        ? (JSON.parse(match.awayBoxScoreJson) as PlayerGameLine[]).map((line) => ({
+            ...line,
+            player: playerLookup.get(line.playerId)!,
+          }))
+        : [],
     }))
     .sort((left, right) => left.round - right.round);
 
@@ -656,6 +672,8 @@ export async function simulateNextRound() {
       awayScore: outcome.awayScore,
       homeTopPerformer: parseTopPerformer(homeStar, playerLookup),
       awayTopPerformer: parseTopPerformer(awayStar, playerLookup),
+      homeBoxScoreJson: JSON.stringify(homeBoxScore),
+      awayBoxScoreJson: JSON.stringify(awayBoxScore),
       summary: outcome.summary,
     });
 
@@ -933,8 +951,22 @@ export async function getPlayerById(playerId: string) {
     return null;
   }
 
+  const statLine = state.playerStats.find((entry) => entry.playerId === player.id) ?? {
+    playerId: player.id,
+    games: 0,
+    points: 0,
+    rebounds: 0,
+    assists: 0,
+  };
+
   return {
     ...player,
     team: state.teams.find((team) => team.id === player.teamId) ?? buildFreeAgentTeam(),
+    seasonStats: {
+      games: statLine.games,
+      ppg: averagePerGame(statLine.points, statLine.games),
+      rpg: averagePerGame(statLine.rebounds, statLine.games),
+      apg: averagePerGame(statLine.assists, statLine.games),
+    },
   };
 }

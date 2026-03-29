@@ -49,6 +49,24 @@ export default async function PlayerDetailPage({
               <p>Potential: {player.potential}</p>
               <p>Archetype: {player.archetype}</p>
             </div>
+            <div className="mt-5 grid gap-3 rounded-[20px] border border-white/10 bg-slate-950/55 p-4 text-sm sm:grid-cols-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Games</p>
+                <p className="mt-1 text-xl font-semibold text-white">{player.seasonStats.games}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">PPG</p>
+                <p className="mt-1 text-xl font-semibold text-white">{player.seasonStats.ppg.toFixed(1)}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">RPG</p>
+                <p className="mt-1 text-xl font-semibold text-white">{player.seasonStats.rpg.toFixed(1)}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">APG</p>
+                <p className="mt-1 text-xl font-semibold text-white">{player.seasonStats.apg.toFixed(1)}</p>
+              </div>
+            </div>
           </div>
         </SectionCard>
 

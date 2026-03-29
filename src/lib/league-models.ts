@@ -46,6 +46,8 @@ export type MatchState = {
   awayScore: number | null;
   homeTopPerformer: string | null;
   awayTopPerformer: string | null;
+  homeBoxScoreJson: string | null;
+  awayBoxScoreJson: string | null;
   summary: string | null;
 };
 
