@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Position {
+  PG
+  SG
+  SF
+  PF
+  C
+}
+
+model UserProfile {
+  id             String   @id @default(cuid())
+  managerName    String
+  favoriteTeamId String   @unique
+  seasonId       String   @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  favoriteTeam Team   @relation(fields: [favoriteTeamId], references: [id])
+  season       Season @relation(fields: [seasonId], references: [id])
+}
+
+model Season {
+  id           String   @id @default(cuid())
+  name         String
+  currentRound Int      @default(1)
+  totalRounds  Int
+  status       String   @default("IN_PROGRESS")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  matches Match[]
+  user    UserProfile?
+}
+
+model Team {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  city          String
+  abbreviation  String   @unique
+  budget        Int
+  wins          Int      @default(0)
+  losses        Int      @default(0)
+  pointsFor     Int      @default(0)
+  pointsAgainst Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  players       Player[]
+  lineup        Lineup?
+  managedBy     UserProfile?
+  homeMatches   Match[]  @relation("HomeTeam")
+  awayMatches   Match[]  @relation("AwayTeam")
+}
+
+model Player {
+  id         String   @id @default(cuid())
+  teamId     String
+  firstName  String
+  lastName   String
+  age        Int
+  position   Position
+  overall    Int
+  scoring    Int
+  playmaking Int
+  rebounding Int
+  defense    Int
+  stamina    Int
+  salary     Int
+  morale     Int      @default(70)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+}
+
+model Lineup {
+  id        String   @id @default(cuid())
+  teamId    String   @unique
+  slotsJson String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+}
+
+model Match {
+  id               String   @id @default(cuid())
+  seasonId         String
+  round            Int
+  homeTeamId       String
+  awayTeamId       String
+  played           Boolean  @default(false)
+  homeScore        Int?
+  awayScore        Int?
+  homeTopPerformer String?
+  awayTopPerformer String?
+  summary          String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  season   Season @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  homeTeam Team   @relation("HomeTeam", fields: [homeTeamId], references: [id], onDelete: Cascade)
+  awayTeam Team   @relation("AwayTeam", fields: [awayTeamId], references: [id], onDelete: Cascade)
+
+  @@unique([seasonId, round, homeTeamId, awayTeamId])
+}

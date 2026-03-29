@@ -1,0 +1,99 @@
+"use client";
+
+import { useActionState } from "react";
+import { resetLeagueAction, saveLineupAction, simulateRoundAction } from "@/app/actions";
+
+const initialState = { ok: true, message: "" };
+
+export function SimulateRoundButton({ disabled }: { disabled: boolean }) {
+  const [state, action, pending] = useActionState(simulateRoundAction, initialState);
+
+  return (
+    <form action={action} className="space-y-2">
+      <button
+        type="submit"
+        disabled={disabled || pending}
+        className="w-full rounded-2xl bg-amber-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-300"
+      >
+        {pending ? "Simulating..." : disabled ? "Season Complete" : "Simulate Next Round"}
+      </button>
+      {state.message ? <p className="text-xs text-slate-400">{state.message}</p> : null}
+    </form>
+  );
+}
+
+export function ResetLeagueButton() {
+  const [state, action, pending] = useActionState(resetLeagueAction, initialState);
+
+  return (
+    <form action={action} className="space-y-2">
+      <button
+        type="submit"
+        disabled={pending}
+        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {pending ? "Resetting..." : "Reset League"}
+      </button>
+      {state.message ? <p className="text-xs text-slate-400">{state.message}</p> : null}
+    </form>
+  );
+}
+
+export function LineupForm({
+  players,
+  currentLineup,
+}: {
+  players: Array<{
+    id: string;
+    fullName: string;
+    position: string;
+    overall: number;
+  }>;
+  currentLineup: Record<string, string>;
+}) {
+  const [state, action, pending] = useActionState(saveLineupAction, initialState);
+
+  const fieldLabels: Array<[string, string]> = [
+    ["pgId", "Starting PG"],
+    ["sgId", "Starting SG"],
+    ["sfId", "Starting SF"],
+    ["pfId", "Starting PF"],
+    ["cId", "Starting C"],
+    ["benchOneId", "Bench 1"],
+    ["benchTwoId", "Bench 2"],
+    ["benchThreeId", "Bench 3"],
+  ];
+
+  return (
+    <form action={action} className="grid gap-5">
+      <div className="grid gap-4 md:grid-cols-2">
+        {fieldLabels.map(([field, label]) => (
+          <label key={field} className="grid gap-2">
+            <span className="text-sm font-medium text-slate-200">{label}</span>
+            <select
+              name={field}
+              defaultValue={currentLineup[field]}
+              className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white outline-none ring-0 transition focus:border-amber-300/70"
+            >
+              {players.map((player) => (
+                <option key={player.id} value={player.id}>
+                  {player.fullName} | {player.position} | OVR {player.overall}
+                </option>
+              ))}
+            </select>
+          </label>
+        ))}
+      </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded-2xl bg-emerald-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
+        >
+          {pending ? "Saving..." : "Save Lineup"}
+        </button>
+        <p className={`text-sm ${state.ok ? "text-slate-300" : "text-rose-300"}`}>{state.message}</p>
+      </div>
+    </form>
+  );
+}
