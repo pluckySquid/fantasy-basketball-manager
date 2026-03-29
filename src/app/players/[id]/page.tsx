@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { TrainPlayerForm } from "@/components/action-forms";
-import { RatingBar, SectionCard } from "@/components/ui";
+import { PlayerPortrait, RatingBar, SectionCard } from "@/components/ui";
 import { getPlayerById } from "@/lib/game-state";
 
 export default async function PlayerDetailPage({
@@ -24,6 +24,11 @@ export default async function PlayerDetailPage({
       <div className="grid gap-5 lg:grid-cols-[1.1fr_1fr]">
         <SectionCard title="Player Snapshot">
           <div className="rounded-[24px] border border-white/10 bg-[linear-gradient(160deg,rgba(255,255,255,0.14),rgba(255,255,255,0.03))] p-5">
+            <PlayerPortrait
+              name={`${player.firstName} ${player.lastName}`}
+              rarity={player.rarity}
+              className="mb-5 h-64 w-full"
+            />
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Profile</p>

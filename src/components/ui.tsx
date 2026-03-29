@@ -50,6 +50,105 @@ function playerArchetype({
   return "Shot Creator";
 }
 
+function hashString(value: string) {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
+  }
+  return hash;
+}
+
+function portraitPalette(seed: string) {
+  const hash = hashString(seed);
+  const skinTones = [
+    ["#f1c7a2", "#d7a17b"],
+    ["#d7a17b", "#b97852"],
+    ["#a66d4a", "#7f4c31"],
+    ["#7b523d", "#553427"],
+  ];
+  const jerseyTones = [
+    ["#38bdf8", "#1d4ed8"],
+    ["#f59e0b", "#b45309"],
+    ["#22c55e", "#15803d"],
+    ["#fb7185", "#be123c"],
+    ["#a78bfa", "#6d28d9"],
+  ];
+  const backgroundTones = [
+    ["#0f172a", "#1e293b"],
+    ["#172554", "#1d4ed8"],
+    ["#3f1d2e", "#7f1d1d"],
+    ["#082f49", "#155e75"],
+  ];
+
+  return {
+    skin: skinTones[hash % skinTones.length],
+    jersey: jerseyTones[Math.floor(hash / 7) % jerseyTones.length],
+    background: backgroundTones[Math.floor(hash / 17) % backgroundTones.length],
+  };
+}
+
+export function PlayerPortrait({
+  name,
+  rarity,
+  className = "h-44 w-full",
+}: {
+  name: string;
+  rarity: "Bronze" | "Silver" | "Gold" | "Platinum";
+  className?: string;
+}) {
+  const palette = portraitPalette(`${name}-${rarity}`);
+  const hash = hashString(`${rarity}-${name}`);
+  const faceWidth = 52 + (hash % 10);
+  const eyeOffset = 12 + (hash % 3);
+  const jawY = 108 + (hash % 6);
+  const hairHeight = 28 + (hash % 10);
+  const glow =
+    rarity === "Platinum"
+      ? "rgba(34,211,238,0.35)"
+      : rarity === "Gold"
+        ? "rgba(251,191,36,0.3)"
+        : rarity === "Silver"
+          ? "rgba(226,232,240,0.24)"
+          : "rgba(217,119,6,0.2)";
+
+  return (
+    <div className={`overflow-hidden rounded-[24px] border border-white/10 bg-slate-950/60 ${className}`}>
+      <svg viewBox="0 0 240 200" className="h-full w-full" role="img" aria-label={`${name} portrait`}>
+        <defs>
+          <linearGradient id={`bg-${hash}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor={palette.background[0]} />
+            <stop offset="100%" stopColor={palette.background[1]} />
+          </linearGradient>
+          <linearGradient id={`skin-${hash}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor={palette.skin[0]} />
+            <stop offset="100%" stopColor={palette.skin[1]} />
+          </linearGradient>
+          <linearGradient id={`jersey-${hash}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor={palette.jersey[0]} />
+            <stop offset="100%" stopColor={palette.jersey[1]} />
+          </linearGradient>
+        </defs>
+        <rect x="0" y="0" width="240" height="200" fill={`url(#bg-${hash})`} />
+        <circle cx="190" cy="36" r="30" fill={glow} />
+        <rect x="0" y="146" width="240" height="54" fill="rgba(8,15,30,0.7)" />
+        <ellipse cx="120" cy="198" rx="76" ry="18" fill="rgba(2,6,23,0.6)" />
+        <ellipse cx="120" cy="84" rx={faceWidth} ry="58" fill={`url(#skin-${hash})`} />
+        <path
+          d={`M ${120 - faceWidth} 82 C ${120 - faceWidth + 5} ${44 + hairHeight}, ${120 + faceWidth - 5} ${44 + hairHeight}, ${120 + faceWidth} 82 L ${120 + faceWidth - 8} 62 C 156 ${36 + hairHeight / 2}, 84 ${36 + hairHeight / 2}, ${120 - faceWidth + 8} 62 Z`}
+          fill="rgba(15,23,42,0.88)"
+        />
+        <circle cx={120 - eyeOffset} cy="86" r="4" fill="#0f172a" />
+        <circle cx={120 + eyeOffset} cy="86" r="4" fill="#0f172a" />
+        <path d={`M 110 102 Q 120 108 130 102`} stroke="#7c2d12" strokeWidth="3" fill="none" strokeLinecap="round" />
+        <path d={`M 94 ${jawY} Q 120 ${jawY + 18} 146 ${jawY}`} fill="rgba(15,23,42,0.08)" />
+        <rect x="103" y="118" width="34" height="24" rx="14" fill={`url(#skin-${hash})`} />
+        <path d="M 62 188 Q 92 136 120 142 Q 148 136 178 188" fill={`url(#jersey-${hash})`} />
+        <path d="M 92 152 Q 120 168 148 152" fill="rgba(255,255,255,0.18)" />
+      </svg>
+    </div>
+  );
+}
+
 export function MetricCard({
   label,
   value,
@@ -133,17 +232,19 @@ export function PlayerShowcaseCard({
 }) {
   const tier = playerTier(player.overall);
   const archetype = playerArchetype(player);
+  const fullName = `${player.firstName} ${player.lastName}`;
 
   return (
     <Link
       href={href}
       className={`group rounded-[28px] border bg-[linear-gradient(160deg,var(--tw-gradient-stops))] p-5 shadow-lg shadow-slate-950/20 transition hover:-translate-y-1 hover:border-amber-300/40 ${rarityStyles(player.rarity)}`}
     >
+      <PlayerPortrait name={fullName} rarity={player.rarity} className="h-48 w-full" />
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-[0.25em] text-slate-400">{player.position}</p>
           <h3 className="mt-2 text-xl font-semibold text-white">
-            {player.firstName} {player.lastName}
+            {fullName}
           </h3>
           <p className="mt-1 text-sm text-slate-300">
             {archetype} | Age {player.age}
