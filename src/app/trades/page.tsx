@@ -2,12 +2,40 @@ import { AppShell } from "@/components/app-shell";
 import { ExecuteTradeButton } from "@/components/action-forms";
 import { MetricCard, PlayerShowcaseCard, SectionCard } from "@/components/ui";
 import { getGameSnapshot } from "@/lib/game-state";
-import { buildNav, copy, getLocale } from "@/lib/i18n";
+import { buildNav, copy, getLocale, translateChemistryNote } from "@/lib/i18n";
+
+function translateTradeSummary(summary: string, locale: "en" | "zh") {
+  if (locale === "en") {
+    return summary;
+  }
+
+  return summary
+    .replace(/^([A-Z]{2,4}) is open to a talent-upside swap if you move (.+)\.$/, "$1 愿意接受一笔更看重潜力的交易，只要你送出 $2。")
+    .replace(/^([A-Z]{2,4}) will take your cheaper piece to balance roles and salary\.$/, "$1 愿意接手你薪资更低的球员，以平衡阵容角色和薪资结构。");
+}
 
 export default async function TradesPage() {
   const locale = await getLocale();
   const t = copy[locale];
   const snapshot = await getGameSnapshot();
+  const labels =
+    locale === "zh"
+      ? {
+          capCaption: "新加入的合同仍然必须符合你的薪资限制。",
+          chemistryCaption: "通过交易修正角色重叠和阵容适配问题。",
+          proposalCaption: "这些方案会根据阵容价值和工资帽规则实时生成。",
+          valueDelta: "价值差",
+          tradeFor: "交易",
+          rankFitFallback: "化学反应调整中",
+        }
+      : {
+          capCaption: "Incoming contracts still have to fit under your salary limit.",
+          chemistryCaption: "Use trades to fix role overlap and weak lineup fit.",
+          proposalCaption: "Fresh ideas built from roster value and cap rules.",
+          valueDelta: "Value delta",
+          tradeFor: "Trade",
+          rankFitFallback: "Lineup fit still evolving",
+        };
 
   return (
     <AppShell
@@ -22,17 +50,17 @@ export default async function TradesPage() {
         <MetricCard
           label={t.trades.tradeableCapRoom}
           value={`${snapshot.favoriteCapRoom >= 0 ? "+" : ""}$${snapshot.favoriteCapRoom.toLocaleString()}`}
-          caption="Incoming contracts still have to fit under your salary limit."
+          caption={labels.capCaption}
         />
         <MetricCard
           label={t.trades.chemistry}
           value={String(snapshot.favoriteChemistry.score)}
-          caption="Use trades to fix role overlap and weak lineup fit."
+          caption={snapshot.favoriteChemistry.notes[0] ? translateChemistryNote(snapshot.favoriteChemistry.notes[0], locale) : labels.chemistryCaption}
         />
         <MetricCard
           label={t.trades.liveProposals}
           value={String(snapshot.tradeBoard.length)}
-          caption="Fresh ideas built from roster value and cap rules."
+          caption={labels.proposalCaption}
         />
       </section>
 
@@ -46,9 +74,9 @@ export default async function TradesPage() {
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                   <div>
                     <p className="text-xs uppercase tracking-[0.25em] text-violet-200">{proposal.partnerTeam.name}</p>
-                    <p className="mt-2 text-lg font-semibold text-white">{proposal.summary}</p>
+                    <p className="mt-2 text-lg font-semibold text-white">{translateTradeSummary(proposal.summary, locale)}</p>
                     <p className="mt-1 text-sm text-slate-300">
-                      Value delta: {proposal.delta >= 0 ? "+" : ""}
+                      {labels.valueDelta}: {proposal.delta >= 0 ? "+" : ""}
                       {proposal.delta}
                     </p>
                   </div>
@@ -56,7 +84,7 @@ export default async function TradesPage() {
                     <ExecuteTradeButton
                       givePlayerId={proposal.givePlayer.id}
                       receivePlayerId={proposal.receivePlayer.id}
-                      label={`Trade ${proposal.givePlayer.lastName} for ${proposal.receivePlayer.lastName}`}
+                      label={`${labels.tradeFor} ${proposal.givePlayer.lastName} ${locale === "zh" ? "换" : "for"} ${proposal.receivePlayer.lastName}`}
                     />
                   </div>
                 </div>
@@ -64,11 +92,11 @@ export default async function TradesPage() {
                 <div className="mt-5 grid gap-4 xl:grid-cols-2">
                   <div className="grid gap-3">
                     <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t.trades.send}</p>
-                    <PlayerShowcaseCard player={proposal.givePlayer} href={`/players/${proposal.givePlayer.id}`} />
+                    <PlayerShowcaseCard player={proposal.givePlayer} href={`/players/${proposal.givePlayer.id}`} locale={locale} />
                   </div>
                   <div className="grid gap-3">
                     <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t.trades.receive}</p>
-                    <PlayerShowcaseCard player={proposal.receivePlayer} href={`/players/${proposal.receivePlayer.id}`} />
+                    <PlayerShowcaseCard player={proposal.receivePlayer} href={`/players/${proposal.receivePlayer.id}`} locale={locale} />
                   </div>
                 </div>
               </article>

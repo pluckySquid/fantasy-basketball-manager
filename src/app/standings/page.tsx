@@ -11,6 +11,38 @@ export default async function StandingsPage() {
   const scoringLeader = snapshot.scoringLeaders[0];
   const assistLeader = snapshot.assistLeaders[0];
   const reboundLeader = snapshot.reboundLeaders[0];
+  const labels =
+    locale === "zh"
+      ? {
+          noGames: "暂无比赛",
+          unlockLeaders: "先模拟一轮比赛，数据领袖才会出现。",
+          ballMovement: "传导球最好的球队会在这里领跑。",
+          interiorPlay: "内线统治力会先体现在这里。",
+          noMvp: "MVP 竞争尚未开始。先模拟首轮比赛，排行榜才会生成。",
+          candidate: "MVP 候选",
+          mvpScore: "MVP 评分",
+          points: "得分",
+          assists: "助攻",
+          rebounds: "篮板",
+          rank: "排名",
+          team: "球队",
+          record: "战绩",
+        }
+      : {
+          noGames: "No games yet",
+          unlockLeaders: "Simulate a round to unlock leaders.",
+          ballMovement: "Ball movement crowns this category.",
+          interiorPlay: "Interior play starts here.",
+          noMvp: "No MVP race yet. Simulate the opening round to seed the leaderboard.",
+          candidate: "MVP Candidate",
+          mvpScore: "MVP Score",
+          points: "Points",
+          assists: "Assists",
+          rebounds: "Rebounds",
+          rank: "Rank",
+          team: "Team",
+          record: "Record",
+        };
 
   return (
     <AppShell
@@ -24,18 +56,18 @@ export default async function StandingsPage() {
       <section className="mb-5 grid gap-4 lg:grid-cols-3">
         <MetricCard
           label={t.standings.scoringLeader}
-          value={scoringLeader ? `${scoringLeader.player.firstName} ${scoringLeader.player.lastName}` : "No games yet"}
-          caption={scoringLeader ? `${scoringLeader.ppg.toFixed(1)} PPG | ${scoringLeader.team.abbreviation}` : "Simulate a round to unlock leaders."}
+          value={scoringLeader ? `${scoringLeader.player.firstName} ${scoringLeader.player.lastName}` : labels.noGames}
+          caption={scoringLeader ? `${scoringLeader.ppg.toFixed(1)} PPG | ${scoringLeader.team.abbreviation}` : labels.unlockLeaders}
         />
         <MetricCard
           label={t.standings.assistLeader}
-          value={assistLeader ? `${assistLeader.player.firstName} ${assistLeader.player.lastName}` : "No games yet"}
-          caption={assistLeader ? `${assistLeader.apg.toFixed(1)} APG | ${assistLeader.team.abbreviation}` : "Ball movement crowns this category."}
+          value={assistLeader ? `${assistLeader.player.firstName} ${assistLeader.player.lastName}` : labels.noGames}
+          caption={assistLeader ? `${assistLeader.apg.toFixed(1)} APG | ${assistLeader.team.abbreviation}` : labels.ballMovement}
         />
         <MetricCard
           label={t.standings.reboundLeader}
-          value={reboundLeader ? `${reboundLeader.player.firstName} ${reboundLeader.player.lastName}` : "No games yet"}
-          caption={reboundLeader ? `${reboundLeader.rpg.toFixed(1)} RPG | ${reboundLeader.team.abbreviation}` : "Interior play starts here."}
+          value={reboundLeader ? `${reboundLeader.player.firstName} ${reboundLeader.player.lastName}` : labels.noGames}
+          caption={reboundLeader ? `${reboundLeader.rpg.toFixed(1)} RPG | ${reboundLeader.team.abbreviation}` : labels.interiorPlay}
         />
       </section>
 
@@ -43,12 +75,12 @@ export default async function StandingsPage() {
         <SectionCard title={t.standings.mvpLadder}>
           <div className="grid gap-3">
             {snapshot.mvpLadder.length === 0 ? (
-              <p className="text-sm text-slate-300">No MVP race yet. Simulate the opening round to seed the leaderboard.</p>
+              <p className="text-sm text-slate-300">{labels.noMvp}</p>
             ) : (
               snapshot.mvpLadder.map((entry, index) => (
                 <article key={entry.player.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.25em] text-amber-200">#{index + 1} MVP Candidate</p>
+                    <p className="text-xs uppercase tracking-[0.25em] text-amber-200">#{index + 1} {labels.candidate}</p>
                     <p className="mt-2 text-lg font-semibold text-white">
                       {entry.player.firstName} {entry.player.lastName}
                     </p>
@@ -57,7 +89,7 @@ export default async function StandingsPage() {
                     </p>
                   </div>
                   <div className="rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-right">
-                    <p className="text-xs uppercase tracking-[0.2em] text-amber-100">MVP Score</p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-amber-100">{labels.mvpScore}</p>
                     <p className="mt-1 text-2xl font-semibold text-white">{entry.mvpScore.toFixed(1)}</p>
                   </div>
                 </article>
@@ -69,9 +101,9 @@ export default async function StandingsPage() {
         <SectionCard title={t.standings.categoryLeaders}>
           <div className="grid gap-4">
             {[
-              { label: "Points", rows: snapshot.scoringLeaders, stat: "ppg" as const, suffix: "PPG" },
-              { label: "Assists", rows: snapshot.assistLeaders, stat: "apg" as const, suffix: "APG" },
-              { label: "Rebounds", rows: snapshot.reboundLeaders, stat: "rpg" as const, suffix: "RPG" },
+              { label: labels.points, rows: snapshot.scoringLeaders, stat: "ppg" as const, suffix: "PPG" },
+              { label: labels.assists, rows: snapshot.assistLeaders, stat: "apg" as const, suffix: "APG" },
+              { label: labels.rebounds, rows: snapshot.reboundLeaders, stat: "rpg" as const, suffix: "RPG" },
             ].map((section) => (
               <div key={section.label} className="rounded-2xl border border-white/10 bg-white/5 p-4">
                 <p className="text-xs uppercase tracking-[0.25em] text-slate-400">{section.label}</p>
@@ -98,9 +130,9 @@ export default async function StandingsPage() {
           <table className="min-w-full divide-y divide-white/10 text-left text-sm">
             <thead className="bg-white/5 text-xs uppercase tracking-[0.2em] text-slate-400">
               <tr>
-                <th className="px-4 py-3">Rank</th>
-                <th className="px-4 py-3">Team</th>
-                <th className="px-4 py-3">Record</th>
+                <th className="px-4 py-3">{labels.rank}</th>
+                <th className="px-4 py-3">{labels.team}</th>
+                <th className="px-4 py-3">{labels.record}</th>
                 <th className="px-4 py-3">PF</th>
                 <th className="px-4 py-3">PA</th>
                 <th className="px-4 py-3">Diff</th>

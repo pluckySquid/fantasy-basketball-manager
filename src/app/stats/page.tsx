@@ -8,30 +8,92 @@ export default async function StatsPage() {
   const t = copy[locale];
   const snapshot = await getGameSnapshot();
   type LeaderRow = (typeof snapshot.scoringLeaders)[number] & { mvpScore?: number };
+  const labels =
+    locale === "zh"
+      ? {
+          scoringLeaders: "得分榜",
+          assistLeaders: "助攻榜",
+          reboundLeaders: "篮板榜",
+          mvpLadder: "MVP 排行",
+          champion: "冠军",
+          seasonInProgress: "赛季仍在进行中",
+          finalRecord: "最终战绩",
+          finishSeason: "完成常规赛后才能决出总冠军。",
+          leagueMvp: "联赛 MVP",
+          noLeader: "暂无领跑者",
+          seedRace: "先进行比赛，MVP 竞争才会开始。",
+          scoringChampion: "得分王",
+          scoringEmpty: "还没有比赛时，得分榜不会出现领跑者。",
+          playmakingAward: "助攻王",
+          assistAfterRound: "首轮比赛后才会出现助攻榜领跑者。",
+          glassKing: "篮板王",
+          reboundAfterRound: "首轮比赛后才会出现篮板榜领跑者。",
+          noExpiring: "你的阵容里目前没有只剩一年合同的球员。",
+          yearsLeft: "年剩余",
+          extension: "续约价格",
+          noHistory: "还没有完成的赛季。先打完当前赛季，再开始积累球队历史。",
+          yourRecord: "你的球队战绩",
+          rank: "排名",
+          player: "球员",
+          team: "球队",
+          games: "场次",
+          populate: "先模拟比赛，这里才会出现排行榜数据。",
+          score: "评分",
+        }
+      : {
+          scoringLeaders: "Scoring Leaders",
+          assistLeaders: "Assist Leaders",
+          reboundLeaders: "Rebound Leaders",
+          mvpLadder: "MVP Ladder",
+          champion: "Champion",
+          seasonInProgress: "Season still in progress",
+          finalRecord: "final record",
+          finishSeason: "Finish the regular season to crown the title winner.",
+          leagueMvp: "League MVP",
+          noLeader: "No leader yet",
+          seedRace: "Simulate games to seed the race.",
+          scoringChampion: "Scoring Champion",
+          scoringEmpty: "Scoring table is empty until games are played.",
+          playmakingAward: "Playmaking Award",
+          assistAfterRound: "Assist leader appears after the first round.",
+          glassKing: "Glass King",
+          reboundAfterRound: "Rebound leader appears after the first round.",
+          noExpiring: "No one on your roster is down to a one-year deal.",
+          yearsLeft: "Y left",
+          extension: "Extension",
+          noHistory: "No completed seasons yet. Finish your current campaign to start building history.",
+          yourRecord: "Your club record",
+          rank: "Rank",
+          player: "Player",
+          team: "Team",
+          games: "Games",
+          populate: "Simulate games to populate this leaderboard.",
+          score: "Score",
+        };
 
   const sections = [
     {
-      title: "Scoring Leaders",
+      title: labels.scoringLeaders,
       rows: snapshot.scoringLeaders,
       suffix: "PPG",
       format: (entry: LeaderRow) => entry.ppg.toFixed(1),
     },
     {
-      title: "Assist Leaders",
+      title: labels.assistLeaders,
       rows: snapshot.assistLeaders,
       suffix: "APG",
       format: (entry: LeaderRow) => entry.apg.toFixed(1),
     },
     {
-      title: "Rebound Leaders",
+      title: labels.reboundLeaders,
       rows: snapshot.reboundLeaders,
       suffix: "RPG",
       format: (entry: LeaderRow) => entry.rpg.toFixed(1),
     },
     {
-      title: "MVP Ladder",
+      title: labels.mvpLadder,
       rows: snapshot.mvpLadder as LeaderRow[],
-      suffix: "Score",
+      suffix: labels.score,
       format: (entry: LeaderRow) => (entry.mvpScore ?? 0).toFixed(1),
     },
   ];
@@ -50,47 +112,47 @@ export default async function StatsPage() {
           <div className="grid gap-3">
             {[
               {
-                label: "Champion",
-                value: snapshot.seasonAwards.champion ? snapshot.seasonAwards.champion.name : "Season still in progress",
+                label: labels.champion,
+                value: snapshot.seasonAwards.champion ? snapshot.seasonAwards.champion.name : labels.seasonInProgress,
                 detail: snapshot.seasonAwards.champion
-                  ? `${snapshot.seasonAwards.champion.wins}-${snapshot.seasonAwards.champion.losses} final record`
-                  : "Finish the regular season to crown the title winner.",
+                  ? `${snapshot.seasonAwards.champion.wins}-${snapshot.seasonAwards.champion.losses} ${labels.finalRecord}`
+                  : labels.finishSeason,
               },
               {
-                label: "League MVP",
+                label: labels.leagueMvp,
                 value: snapshot.seasonAwards.mvp
                   ? `${snapshot.seasonAwards.mvp.player.firstName} ${snapshot.seasonAwards.mvp.player.lastName}`
-                  : "No leader yet",
+                  : labels.noLeader,
                 detail: snapshot.seasonAwards.mvp
                   ? `${snapshot.seasonAwards.mvp.team.abbreviation} | ${snapshot.seasonAwards.mvp.ppg.toFixed(1)} PPG`
-                  : "Simulate games to seed the race.",
+                  : labels.seedRace,
               },
               {
-                label: "Scoring Champion",
+                label: labels.scoringChampion,
                 value: snapshot.seasonAwards.scoringChampion
                   ? `${snapshot.seasonAwards.scoringChampion.player.firstName} ${snapshot.seasonAwards.scoringChampion.player.lastName}`
-                  : "No leader yet",
+                  : labels.noLeader,
                 detail: snapshot.seasonAwards.scoringChampion
                   ? `${snapshot.seasonAwards.scoringChampion.ppg.toFixed(1)} PPG`
-                  : "Scoring table is empty until games are played.",
+                  : labels.scoringEmpty,
               },
               {
-                label: "Playmaking Award",
+                label: labels.playmakingAward,
                 value: snapshot.seasonAwards.assistChampion
                   ? `${snapshot.seasonAwards.assistChampion.player.firstName} ${snapshot.seasonAwards.assistChampion.player.lastName}`
-                  : "No leader yet",
+                  : labels.noLeader,
                 detail: snapshot.seasonAwards.assistChampion
                   ? `${snapshot.seasonAwards.assistChampion.apg.toFixed(1)} APG`
-                  : "Assist leader appears after the first round.",
+                  : labels.assistAfterRound,
               },
               {
-                label: "Glass King",
+                label: labels.glassKing,
                 value: snapshot.seasonAwards.reboundChampion
                   ? `${snapshot.seasonAwards.reboundChampion.player.firstName} ${snapshot.seasonAwards.reboundChampion.player.lastName}`
-                  : "No leader yet",
+                  : labels.noLeader,
                 detail: snapshot.seasonAwards.reboundChampion
                   ? `${snapshot.seasonAwards.reboundChampion.rpg.toFixed(1)} RPG`
-                  : "Rebound leader appears after the first round.",
+                  : labels.reboundAfterRound,
               },
             ].map((award) => (
               <article key={award.label} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
@@ -105,7 +167,7 @@ export default async function StatsPage() {
         <SectionCard title={t.stats.contractWatch}>
           <div className="grid gap-3">
             {snapshot.expiringContracts.length === 0 ? (
-              <p className="text-sm text-slate-300">No one on your roster is down to a one-year deal.</p>
+              <p className="text-sm text-slate-300">{labels.noExpiring}</p>
             ) : (
               snapshot.expiringContracts.map((player) => (
                 <div key={`watch-${player.id}`} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
@@ -113,7 +175,7 @@ export default async function StatsPage() {
                     {player.firstName} {player.lastName}
                   </p>
                   <p className="mt-1 text-sm text-slate-300">
-                    {player.contractYears}Y left | Extension {player.extensionCost} cr
+                    {player.contractYears}{locale === "zh" ? "年剩余" : "Y left"} | {labels.extension} {player.extensionCost} cr
                   </p>
                 </div>
               ))
@@ -125,17 +187,17 @@ export default async function StatsPage() {
       <SectionCard title={t.stats.franchiseTimeline}>
         <div className="grid gap-3">
           {snapshot.seasonHistory.length === 0 ? (
-            <p className="text-sm text-slate-300">No completed seasons yet. Finish your current campaign to start building history.</p>
+            <p className="text-sm text-slate-300">{labels.noHistory}</p>
           ) : (
             snapshot.seasonHistory.map((entry) => (
               <article key={entry.seasonId} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
                 <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                   <p className="text-lg font-semibold text-white">{entry.seasonName}</p>
-                  <p className="text-sm text-slate-300">Champion: {entry.championTeamName}</p>
+                  <p className="text-sm text-slate-300">{labels.champion}: {entry.championTeamName}</p>
                 </div>
                 <div className="mt-2 grid gap-2 text-sm text-slate-300 md:grid-cols-2">
-                  <p>Your club record: {entry.favoriteTeamRecord}</p>
-                  <p>League MVP: {entry.mvpName}</p>
+                  <p>{labels.yourRecord}: {entry.favoriteTeamRecord}</p>
+                  <p>{labels.leagueMvp}: {entry.mvpName}</p>
                 </div>
               </article>
             ))
@@ -150,10 +212,10 @@ export default async function StatsPage() {
               <table className="min-w-full divide-y divide-white/10 text-left text-sm">
                 <thead className="bg-white/5 text-xs uppercase tracking-[0.2em] text-slate-400">
                   <tr>
-                    <th className="px-4 py-3">Rank</th>
-                    <th className="px-4 py-3">Player</th>
-                    <th className="px-4 py-3">Team</th>
-                    <th className="px-4 py-3">Games</th>
+                    <th className="px-4 py-3">{labels.rank}</th>
+                    <th className="px-4 py-3">{labels.player}</th>
+                    <th className="px-4 py-3">{labels.team}</th>
+                    <th className="px-4 py-3">{labels.games}</th>
                     <th className="px-4 py-3">{section.suffix}</th>
                   </tr>
                 </thead>
@@ -161,7 +223,7 @@ export default async function StatsPage() {
                   {section.rows.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="px-4 py-6 text-center text-slate-300">
-                        Simulate games to populate this leaderboard.
+                        {labels.populate}
                       </td>
                     </tr>
                   ) : (
