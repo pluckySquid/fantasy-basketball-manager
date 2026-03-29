@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import {
+  openPack,
   resetLeague,
   saveFavoriteLineup,
+  sellRosterPlayer,
   signMarketPlayer,
   simulateNextRound,
   trainPlayer,
@@ -60,6 +62,30 @@ export async function signPlayerAction(
 ) {
   const playerId = String(formData.get("playerId") ?? "");
   const result = await signMarketPlayer(playerId);
+  refreshLeaguePaths();
+  return result;
+}
+
+export async function sellPlayerAction(
+  _: { ok: boolean; message: string },
+  formData: FormData,
+) {
+  const playerId = String(formData.get("playerId") ?? "");
+  const result = await sellRosterPlayer(playerId);
+  refreshLeaguePaths();
+  return result;
+}
+
+export async function openPackAction(
+  _: { ok: boolean; message: string },
+  formData: FormData,
+) {
+  const packType = String(formData.get("packType") ?? "");
+  if (packType !== "standard" && packType !== "elite") {
+    return { ok: false as const, message: "Unknown pack type." };
+  }
+
+  const result = await openPack(packType);
   refreshLeaguePaths();
   return result;
 }

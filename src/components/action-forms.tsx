@@ -2,8 +2,10 @@
 
 import { useActionState } from "react";
 import {
+  openPackAction,
   resetLeagueAction,
   saveLineupAction,
+  sellPlayerAction,
   signPlayerAction,
   simulateRoundAction,
   trainPlayerAction,
@@ -188,6 +190,56 @@ export function TrainPlayerForm({ playerId }: { playerId: string }) {
         className="rounded-2xl bg-emerald-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-300"
       >
         {pending ? "Training..." : "Run Training"}
+      </button>
+      {state.message ? <p className={`text-xs ${state.ok ? "text-slate-400" : "text-rose-300"}`}>{state.message}</p> : null}
+    </form>
+  );
+}
+
+export function SellPlayerButton({
+  playerId,
+  value,
+}: {
+  playerId: string;
+  value: number;
+}) {
+  const [state, action, pending] = useActionState(sellPlayerAction, initialState);
+
+  return (
+    <form action={action} className="space-y-2">
+      <input type="hidden" name="playerId" value={playerId} />
+      <button
+        type="submit"
+        disabled={pending}
+        className="w-full rounded-2xl border border-rose-300/25 bg-rose-300/10 px-4 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-300/20 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {pending ? "Selling..." : `Sell for ${value} cr`}
+      </button>
+      {state.message ? <p className={`text-xs ${state.ok ? "text-slate-400" : "text-rose-300"}`}>{state.message}</p> : null}
+    </form>
+  );
+}
+
+export function OpenPackButton({
+  packType,
+  label,
+  cost,
+}: {
+  packType: "standard" | "elite";
+  label: string;
+  cost: number;
+}) {
+  const [state, action, pending] = useActionState(openPackAction, initialState);
+
+  return (
+    <form action={action} className="space-y-2">
+      <input type="hidden" name="packType" value={packType} />
+      <button
+        type="submit"
+        disabled={pending}
+        className="w-full rounded-2xl border border-cyan-300/25 bg-cyan-300/12 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {pending ? "Opening..." : `${label} (${cost} cr)`}
       </button>
       {state.message ? <p className={`text-xs ${state.ok ? "text-slate-400" : "text-rose-300"}`}>{state.message}</p> : null}
     </form>

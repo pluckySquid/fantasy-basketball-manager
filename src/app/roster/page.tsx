@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { SellPlayerButton } from "@/components/action-forms";
 import { MetricCard, PlayerShowcaseCard, SectionCard } from "@/components/ui";
 import { getGameSnapshot } from "@/lib/game-state";
 
@@ -32,7 +33,13 @@ export default async function RosterPage() {
       <SectionCard title={`${snapshot.favoriteTeam.name} Cards`}>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {snapshot.favoriteTeam.players.map((player) => (
-            <PlayerShowcaseCard key={player.id} player={player} href={`/players/${player.id}`} />
+            <div key={player.id} className="grid gap-3">
+              <PlayerShowcaseCard player={player} href={`/players/${player.id}`} />
+              <SellPlayerButton
+                playerId={player.id}
+                value={Math.round(player.salary * 0.75 + player.overall * 12)}
+              />
+            </div>
           ))}
         </div>
       </SectionCard>

@@ -257,6 +257,19 @@ function staffUpgradeCost(level: number) {
   return 300 + level * 220;
 }
 
+function packCost(type: "standard" | "elite") {
+  return type === "elite" ? 520 : 260;
+}
+
+function generateMarketProspect(seed: number): PlayerState {
+  return generatePlayer(
+    teamBlueprint.length + seed,
+    seed % rosterBlueprint.length,
+    rosterBlueprint[seed % rosterBlueprint.length],
+    "MARKET",
+  );
+}
+
 export async function saveFavoriteLineup(formData: FormData) {
   await ensureLeagueReady();
   const state = await readLeagueState();
@@ -423,6 +436,9 @@ export async function signMarketPlayer(playerId: string) {
   if (!player) {
     return { ok: false as const, message: "That player is no longer on the market." };
   }
+  if (state.players.filter((entry) => entry.teamId === state.profile.favoriteTeamId).length >= 12) {
+    return { ok: false as const, message: "Your roster is full. Sell a player before signing another." };
+  }
 
   const price = player.salary + team.scoutingLevel * 80;
   if (state.profile.credits < price) {
@@ -435,6 +451,90 @@ export async function signMarketPlayer(playerId: string) {
 
   await writeLeagueState(state);
   return { ok: true as const, message: `${player.firstName} ${player.lastName} joined your club.` };
+}
+
+export async function sellRosterPlayer(playerId: string) {
+  await ensureLeagueReady();
+  const state = await readLeagueState();
+  const player = state.players.find((entry) => entry.id === playerId && entry.teamId === state.profile.favoriteTeamId);
+
+  if (!player) {
+    return { ok: false as const, message: "That player is not on your roster." };
+  }
+
+  const roster = state.players.filter((entry) => entry.teamId === state.profile.favoriteTeamId);
+  if (roster.length <= 8) {
+    return { ok: false as const, message: "Keep at least 8 players so your lineup remains valid." };
+  }
+
+  const payout = Math.round(player.salary * 0.75 + player.overall * 12);
+  state.profile.credits += payout;
+  state.players = state.players.filter((entry) => entry.id !== playerId);
+  state.marketPlayers.unshift({ ...player, teamId: "MARKET", morale: Math.max(55, player.morale - 6) });
+
+  const lineup = state.lineups.find((entry) => entry.teamId === state.profile.favoriteTeamId);
+  if (lineup) {
+    const parsed = parseLineupSlots(lineup.slotsJson);
+    const rosterIds = state.players
+      .filter((entry) => entry.teamId === state.profile.favoriteTeamId)
+      .map((entry) => entry.id);
+    const replacements = [...rosterIds];
+    const normalized = Object.fromEntries(
+      Object.entries(parsed).map(([slot, id]) => {
+        if (id !== playerId) {
+          return [slot, id];
+        }
+        const replacement = replacements.find((candidate) => !Object.values(parsed).includes(candidate) || candidate === id) ?? rosterIds[0];
+        return [slot, replacement];
+      }),
+    ) as LineupSlots;
+    lineup.slotsJson = stringifyLineupSlots(normalized);
+  }
+
+  await writeLeagueState(state);
+  return { ok: true as const, message: `${player.firstName} ${player.lastName} was sold for ${payout} credits.` };
+}
+
+export async function openPack(type: "standard" | "elite") {
+  await ensureLeagueReady();
+  const state = await readLeagueState();
+  const rosterSize = state.players.filter((entry) => entry.teamId === state.profile.favoriteTeamId).length;
+  if (rosterSize >= 12) {
+    return { ok: false as const, message: "Your roster is full. Sell a player before opening a pack." };
+  }
+
+  const cost = packCost(type);
+  if (state.profile.credits < cost) {
+    return { ok: false as const, message: `Not enough credits. ${type} pack costs ${cost}.` };
+  }
+
+  state.profile.credits -= cost;
+  const player = generateMarketProspect(state.marketPlayers.length + state.players.length + (type === "elite" ? 7 : 3));
+  const boosted =
+    type === "elite"
+      ? {
+          ...player,
+          overall: Math.min(94, player.overall + 5),
+          scoring: Math.min(98, player.scoring + 4),
+          playmaking: Math.min(98, player.playmaking + 4),
+          rebounding: Math.min(98, player.rebounding + 4),
+          defense: Math.min(98, player.defense + 4),
+          stamina: Math.min(98, player.stamina + 3),
+          rarity: (player.overall >= 82 ? "Platinum" : "Gold") as PlayerState["rarity"],
+          potential: Math.min(99, player.potential + 5),
+        }
+      : player;
+  const finalPlayer = {
+    ...boosted,
+    teamId: state.profile.favoriteTeamId,
+    overall: Math.min(boosted.potential, normalizePlayerOverall(boosted)),
+  };
+  state.players.push(finalPlayer);
+  await writeLeagueState(state);
+  return {
+    ok: true as const,
+    message: `${finalPlayer.firstName} ${finalPlayer.lastName} joined your roster from a ${type} pack.`,
+  };
 }
 
 export function getStaffDepartments(team: LeagueState["teams"][number]) {
