@@ -22,7 +22,11 @@ export default async function PlayerDetailPage({
   return (
     <AppShell
       title={`${player.firstName} ${player.lastName}`}
-      subtitle={`Detailed player card for ${player.team.name}. Use this page to inspect role fit, salary, and attribute profile.`}
+      subtitle={
+        locale === "zh"
+          ? `${player.team.name} 的详细球员卡页面，可在这里查看定位、薪资和能力构成。`
+          : `Detailed player card for ${player.team.name}. Use this page to inspect role fit, salary, and attribute profile.`
+      }
       locale={locale}
       nav={buildNav(locale)}
       languageLabels={t.language}
@@ -38,28 +42,28 @@ export default async function PlayerDetailPage({
             />
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Profile</p>
+                <p className="text-xs uppercase tracking-[0.25em] text-slate-400">{t.player.profile}</p>
                 <p className="mt-3 text-3xl font-semibold text-white">{player.overall}</p>
-                <p className="text-sm text-slate-300">Overall rating</p>
+                <p className="text-sm text-slate-300">{locale === "zh" ? "综合能力评分" : "Overall rating"}</p>
               </div>
               <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-amber-200">
-                {player.rarity} | {player.archetype}
+                {player.rarity} | {t.player.archetype}: {player.archetype}
               </div>
             </div>
             <div className="mt-6 grid gap-3 text-sm text-slate-200 sm:grid-cols-2">
-              <p>Position: {player.position}</p>
-              <p>Age: {player.age}</p>
-              <p>Overall: {player.overall}</p>
-              <p>Salary: ${player.salary.toLocaleString()}</p>
-              <p>Contract: {player.contractYears} years</p>
-              <p>Morale: {player.morale}</p>
-              <p>Team: {player.team.abbreviation}</p>
-              <p>Potential: {player.potential}</p>
-              <p>Archetype: {player.archetype}</p>
+              <p>{t.player.position}: {player.position}</p>
+              <p>{t.player.age}: {player.age}</p>
+              <p>{t.player.overall}: {player.overall}</p>
+              <p>{t.player.salary}: ${player.salary.toLocaleString()}</p>
+              <p>{t.player.contract}: {player.contractYears} {locale === "zh" ? "年" : "years"}</p>
+              <p>{t.player.morale}: {player.morale}</p>
+              <p>{t.player.team}: {player.team.abbreviation}</p>
+              <p>{t.player.potential}: {player.potential}</p>
+              <p>{t.player.archetype}: {player.archetype}</p>
             </div>
             <div className="mt-5 grid gap-3 rounded-[20px] border border-white/10 bg-slate-950/55 p-4 text-sm sm:grid-cols-4">
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Games</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t.player.games}</p>
                 <p className="mt-1 text-xl font-semibold text-white">{player.seasonStats.games}</p>
               </div>
               <div>
@@ -80,12 +84,12 @@ export default async function PlayerDetailPage({
 
         <SectionCard title={t.player.ratings}>
           <div className="grid gap-4">
-            <RatingBar label="Scoring" value={player.scoring} />
-            <RatingBar label="Playmaking" value={player.playmaking} />
-            <RatingBar label="Rebounding" value={player.rebounding} />
-            <RatingBar label="Defense" value={player.defense} />
-            <RatingBar label="Stamina" value={player.stamina} />
-            <RatingBar label="Potential" value={player.potential} />
+            <RatingBar label={t.common.scoring} value={player.scoring} />
+            <RatingBar label={t.common.playmaking} value={player.playmaking} />
+            <RatingBar label={t.common.rebounding} value={player.rebounding} />
+            <RatingBar label={t.common.defense} value={player.defense} />
+            <RatingBar label={t.common.stamina} value={player.stamina} />
+            <RatingBar label={t.common.potential} value={player.potential} />
           </div>
         </SectionCard>
       </div>
@@ -93,19 +97,46 @@ export default async function PlayerDetailPage({
       <div className="mt-5 grid gap-5 lg:grid-cols-[1.2fr_1fr]">
         <SectionCard title={t.player.notes}>
           <div className="space-y-3 text-sm text-slate-300">
-            <p>{player.firstName} is tagged as a {player.archetype.toLowerCase()} and carries {player.rarity.toLowerCase()} card status in this MVP.</p>
-            <p>Training raises one key attribute at a time and can push the overall rating toward the player&apos;s potential cap.</p>
-            <p>High-morale players hold their value better and contribute more consistently during season simulations.</p>
+            <p>
+              {locale === "zh"
+                ? `${player.firstName} 在这套 MVP 系统里被定义为${player.archetype}，并拥有 ${player.rarity} 稀有度球员卡。`
+                : `${player.firstName} is tagged as a ${player.archetype.toLowerCase()} and carries ${player.rarity.toLowerCase()} card status in this MVP.`}
+            </p>
+            <p>
+              {locale === "zh"
+                ? "训练每次只会强化一项核心能力，并逐步把总评推向这名球员的潜力上限。"
+                : "Training raises one key attribute at a time and can push the overall rating toward the player's potential cap."}
+            </p>
+            <p>
+              {locale === "zh"
+                ? "士气高的球员通常更保值，也会在赛季模拟中贡献得更稳定。"
+                : "High-morale players hold their value better and contribute more consistently during season simulations."}
+            </p>
           </div>
         </SectionCard>
 
         <SectionCard title={t.player.training}>
           <div className="grid gap-4">
-            <TrainPlayerForm playerId={player.id} />
+            <TrainPlayerForm
+              playerId={player.id}
+              labels={{
+                focus: locale === "zh" ? "训练方向" : "Training focus",
+                options:
+                  locale === "zh"
+                    ? ["得分训练", "组织训练", "篮板训练", "防守训练", "体能训练"]
+                    : [],
+                idle: t.actions.training,
+                pending: t.actions.trainingLoading,
+              }}
+            />
             {player.team.id !== "MARKET" ? (
               <ExtendContractButton
                 playerId={player.id}
                 cost={Math.round(player.salary * 0.6 + player.overall * 18 + Math.max(0, 3 - player.contractYears) * 120)}
+                labels={{
+                  idle: t.actions.extendContract,
+                  pending: t.actions.negotiating,
+                }}
               />
             ) : null}
           </div>

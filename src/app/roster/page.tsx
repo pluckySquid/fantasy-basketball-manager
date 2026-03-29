@@ -23,27 +23,27 @@ export default async function RosterPage() {
         <MetricCard
           label={t.roster.payroll}
           value={`$${snapshot.favoritePayroll.toLocaleString()}`}
-          caption="Total salary commitment across the active roster."
+          caption={t.common.rosterPayrollCaption}
         />
         <MetricCard
           label={t.roster.averageOvr}
           value={String(Math.round(snapshot.favoriteTeam.players.reduce((sum, player) => sum + player.overall, 0) / snapshot.favoriteTeam.players.length))}
-          caption="Quick read on roster quality."
+          caption={t.common.rosterAverageCaption}
         />
         <MetricCard
           label={t.roster.topPlayer}
           value={`${snapshot.favoriteTeam.players[0].firstName} ${snapshot.favoriteTeam.players[0].lastName}`}
-          caption="Current leader by overall rating."
+          caption={t.common.rosterTopPlayerCaption}
         />
         <MetricCard
           label={t.roster.capRoom}
           value={`${snapshot.favoriteCapRoom >= 0 ? "+" : ""}$${snapshot.favoriteCapRoom.toLocaleString()}`}
-          caption={`Budget ceiling: $${snapshot.favoriteTeam.budget.toLocaleString()}`}
+          caption={`${t.common.rosterBudgetCaption}: $${snapshot.favoriteTeam.budget.toLocaleString()}`}
         />
         <MetricCard
           label={t.roster.chemistry}
           value={String(snapshot.favoriteChemistry.score)}
-          caption={snapshot.favoriteChemistry.notes[0] ?? "Balanced roles improve team strength."}
+          caption={snapshot.favoriteChemistry.notes[0] ?? t.common.rosterChemistryCaption}
         />
       </section>
 
@@ -51,10 +51,14 @@ export default async function RosterPage() {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {snapshot.favoriteTeam.players.map((player) => (
             <div key={player.id} className="grid gap-3">
-              <PlayerShowcaseCard player={player} href={`/players/${player.id}`} />
+              <PlayerShowcaseCard player={player} href={`/players/${player.id}`} locale={locale} />
               <SellPlayerButton
                 playerId={player.id}
                 value={Math.round(player.salary * 0.75 + player.overall * 12)}
+                labels={{
+                  idle: t.actions.sellFor,
+                  pending: locale === "zh" ? "出售中..." : "Selling...",
+                }}
               />
             </div>
           ))}
@@ -74,7 +78,7 @@ export default async function RosterPage() {
                       {player.firstName} {player.lastName}
                     </p>
                     <p className="mt-1 text-sm text-slate-300">
-                      {player.position} | OVR {player.overall} | {player.contractYears}Y remaining
+                      {player.position} | {t.common.ovrShort} {player.overall} | {player.contractYears} {t.common.contractRemaining}
                     </p>
                   </div>
                   <div className="rounded-full border border-amber-300/25 bg-amber-300/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-100">
@@ -82,7 +86,14 @@ export default async function RosterPage() {
                   </div>
                 </div>
                 <div className="mt-4">
-                  <ExtendContractButton playerId={player.id} cost={player.extensionCost} />
+                  <ExtendContractButton
+                    playerId={player.id}
+                    cost={player.extensionCost}
+                    labels={{
+                      idle: t.actions.extendContract,
+                      pending: t.actions.negotiating,
+                    }}
+                  />
                 </div>
               </article>
             ))
@@ -95,13 +106,13 @@ export default async function RosterPage() {
           <table className="min-w-full divide-y divide-white/10 text-left text-sm">
             <thead className="bg-white/5 text-xs uppercase tracking-[0.2em] text-slate-400">
               <tr>
-                <th className="px-4 py-3">Player</th>
-                <th className="px-4 py-3">Pos</th>
-                <th className="px-4 py-3">OVR</th>
-                <th className="px-4 py-3">Scoring</th>
-                <th className="px-4 py-3">Playmaking</th>
-                <th className="px-4 py-3">Rebounding</th>
-                <th className="px-4 py-3">Defense</th>
+                <th className="px-4 py-3">{t.common.player}</th>
+                <th className="px-4 py-3">{t.common.position}</th>
+                <th className="px-4 py-3">{t.common.ovrShort}</th>
+                <th className="px-4 py-3">{t.common.scoring}</th>
+                <th className="px-4 py-3">{t.common.playmaking}</th>
+                <th className="px-4 py-3">{t.common.rebounding}</th>
+                <th className="px-4 py-3">{t.common.defense}</th>
                 <th className="px-4 py-3">{t.roster.contract}</th>
                 <th className="px-4 py-3">{t.roster.salary}</th>
               </tr>
@@ -120,7 +131,7 @@ export default async function RosterPage() {
                   <td className="px-4 py-4">{player.playmaking}</td>
                   <td className="px-4 py-4">{player.rebounding}</td>
                   <td className="px-4 py-4">{player.defense}</td>
-                  <td className="px-4 py-4">{player.contractYears}Y</td>
+                  <td className="px-4 py-4">{player.contractYears}{locale === "zh" ? "年" : "Y"}</td>
                   <td className="px-4 py-4">${player.salary.toLocaleString()}</td>
                 </tr>
               ))}

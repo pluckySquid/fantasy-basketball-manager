@@ -18,7 +18,7 @@ import {
 
 const initialState = { ok: true, message: "" };
 
-export function SimulateRoundButton({ disabled }: { disabled: boolean }) {
+export function SimulateRoundButton({ disabled, labels }: { disabled: boolean; labels?: ActionLabels }) {
   const [state, action, pending] = useActionState(simulateRoundAction, initialState);
 
   return (
@@ -28,14 +28,20 @@ export function SimulateRoundButton({ disabled }: { disabled: boolean }) {
         disabled={disabled || pending}
         className="w-full rounded-2xl bg-amber-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-300"
       >
-        {pending ? "Simulating..." : disabled ? "Season Complete" : "Simulate Next Round"}
+        {pending ? labels?.pending ?? "Simulating..." : disabled ? labels?.disabled ?? "Season Complete" : labels?.idle ?? "Simulate Next Round"}
       </button>
       {state.message ? <p className="text-xs text-slate-400">{state.message}</p> : null}
     </form>
   );
 }
 
-export function ResetLeagueButton() {
+type ActionLabels = {
+  idle: string;
+  pending: string;
+  disabled?: string;
+};
+
+export function ResetLeagueButton({ labels }: { labels?: ActionLabels }) {
   const [state, action, pending] = useActionState(resetLeagueAction, initialState);
 
   return (
@@ -45,14 +51,14 @@ export function ResetLeagueButton() {
         disabled={pending}
         className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {pending ? "Resetting..." : "Reset League"}
+        {pending ? labels?.pending ?? "Resetting..." : labels?.idle ?? "Reset League"}
       </button>
       {state.message ? <p className="text-xs text-slate-400">{state.message}</p> : null}
     </form>
   );
 }
 
-export function StartNextSeasonButton({ disabled }: { disabled: boolean }) {
+export function StartNextSeasonButton({ disabled, labels }: { disabled: boolean; labels?: ActionLabels }) {
   const [state, action, pending] = useActionState(startNextSeasonAction, initialState);
 
   return (
@@ -62,7 +68,7 @@ export function StartNextSeasonButton({ disabled }: { disabled: boolean }) {
         disabled={disabled || pending}
         className="w-full rounded-2xl bg-sky-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-200 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-300"
       >
-        {pending ? "Rolling Over..." : disabled ? "Finish Season First" : "Start Next Season"}
+        {pending ? labels?.pending ?? "Rolling Over..." : disabled ? labels?.disabled ?? "Finish Season First" : labels?.idle ?? "Start Next Season"}
       </button>
       {state.message ? <p className="text-xs text-slate-400">{state.message}</p> : null}
     </form>
@@ -111,6 +117,7 @@ export function LanguageSwitcher({
 export function LineupForm({
   players,
   currentLineup,
+  labels,
 }: {
   players: Array<{
     id: string;
@@ -119,18 +126,23 @@ export function LineupForm({
     overall: number;
   }>;
   currentLineup: Record<string, string>;
+  labels?: {
+    save: string;
+    saving: string;
+    fieldLabels?: string[];
+  };
 }) {
   const [state, action, pending] = useActionState(saveLineupAction, initialState);
 
   const fieldLabels: Array<[string, string]> = [
-    ["pgId", "Starting PG"],
-    ["sgId", "Starting SG"],
-    ["sfId", "Starting SF"],
-    ["pfId", "Starting PF"],
-    ["cId", "Starting C"],
-    ["benchOneId", "Bench 1"],
-    ["benchTwoId", "Bench 2"],
-    ["benchThreeId", "Bench 3"],
+    ["pgId", labels?.fieldLabels?.[0] ?? "Starting PG"],
+    ["sgId", labels?.fieldLabels?.[1] ?? "Starting SG"],
+    ["sfId", labels?.fieldLabels?.[2] ?? "Starting SF"],
+    ["pfId", labels?.fieldLabels?.[3] ?? "Starting PF"],
+    ["cId", labels?.fieldLabels?.[4] ?? "Starting C"],
+    ["benchOneId", labels?.fieldLabels?.[5] ?? "Bench 1"],
+    ["benchTwoId", labels?.fieldLabels?.[6] ?? "Bench 2"],
+    ["benchThreeId", labels?.fieldLabels?.[7] ?? "Bench 3"],
   ];
 
   return (
@@ -159,7 +171,7 @@ export function LineupForm({
           disabled={pending}
           className="rounded-2xl bg-emerald-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
         >
-          {pending ? "Saving..." : "Save Lineup"}
+          {pending ? labels?.saving ?? "Saving..." : labels?.save ?? "Save Lineup"}
         </button>
         <p className={`text-sm ${state.ok ? "text-slate-300" : "text-rose-300"}`}>{state.message}</p>
       </div>
@@ -171,10 +183,12 @@ export function StaffUpgradeButton({
   department,
   label,
   cost,
+  labels,
 }: {
   department: "training" | "medical" | "scouting";
   label: string;
   cost: number;
+  labels?: ActionLabels;
 }) {
   const [state, action, pending] = useActionState(upgradeStaffAction, initialState);
 
@@ -186,7 +200,7 @@ export function StaffUpgradeButton({
         disabled={pending}
         className="w-full rounded-2xl bg-white/6 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {pending ? "Upgrading..." : `Upgrade ${label} (${cost} cr)`}
+        {pending ? labels?.pending ?? "Upgrading..." : `${labels?.idle ?? "Upgrade"} ${label} (${cost} cr)`}
       </button>
       {state.message ? <p className={`text-xs ${state.ok ? "text-slate-400" : "text-rose-300"}`}>{state.message}</p> : null}
     </form>
@@ -196,9 +210,11 @@ export function StaffUpgradeButton({
 export function SignPlayerButton({
   playerId,
   price,
+  labels,
 }: {
   playerId: string;
   price: number;
+  labels?: ActionLabels;
 }) {
   const [state, action, pending] = useActionState(signPlayerAction, initialState);
 
@@ -210,14 +226,25 @@ export function SignPlayerButton({
         disabled={pending}
         className="w-full rounded-2xl bg-amber-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-300"
       >
-        {pending ? "Signing..." : `Sign for ${price} cr`}
+        {pending ? labels?.pending ?? "Signing..." : `${labels?.idle ?? "Sign for"} ${price} cr`}
       </button>
       {state.message ? <p className={`text-xs ${state.ok ? "text-slate-400" : "text-rose-300"}`}>{state.message}</p> : null}
     </form>
   );
 }
 
-export function TrainPlayerForm({ playerId }: { playerId: string }) {
+export function TrainPlayerForm({
+  playerId,
+  labels,
+}: {
+  playerId: string;
+  labels?: {
+    focus: string;
+    options: string[];
+    idle: string;
+    pending: string;
+  };
+}) {
   const [state, action, pending] = useActionState(trainPlayerAction, initialState);
   const options = [
     ["scoring", "Scoring Session"],
@@ -231,15 +258,15 @@ export function TrainPlayerForm({ playerId }: { playerId: string }) {
     <form action={action} className="grid gap-3">
       <input type="hidden" name="playerId" value={playerId} />
       <label className="grid gap-2">
-        <span className="text-sm font-medium text-slate-200">Training focus</span>
+        <span className="text-sm font-medium text-slate-200">{labels?.focus ?? "Training focus"}</span>
         <select
           name="focus"
           defaultValue="scoring"
           className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white outline-none transition focus:border-amber-300/70"
         >
-          {options.map(([value, label]) => (
+          {options.map(([value, label], index) => (
             <option key={value} value={value}>
-              {label}
+              {labels?.options?.[index] ?? label}
             </option>
           ))}
         </select>
@@ -249,7 +276,7 @@ export function TrainPlayerForm({ playerId }: { playerId: string }) {
         disabled={pending}
         className="rounded-2xl bg-emerald-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-300"
       >
-        {pending ? "Training..." : "Run Training"}
+        {pending ? labels?.pending ?? "Training..." : labels?.idle ?? "Run Training"}
       </button>
       {state.message ? <p className={`text-xs ${state.ok ? "text-slate-400" : "text-rose-300"}`}>{state.message}</p> : null}
     </form>
@@ -259,9 +286,11 @@ export function TrainPlayerForm({ playerId }: { playerId: string }) {
 export function ExtendContractButton({
   playerId,
   cost,
+  labels,
 }: {
   playerId: string;
   cost: number;
+  labels?: ActionLabels;
 }) {
   const [state, action, pending] = useActionState(extendContractAction, initialState);
 
@@ -273,7 +302,7 @@ export function ExtendContractButton({
         disabled={pending}
         className="w-full rounded-2xl border border-sky-300/25 bg-sky-300/12 px-4 py-3 text-sm font-semibold text-sky-100 transition hover:bg-sky-300/20 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {pending ? "Negotiating..." : `Extend Contract (${cost} cr)`}
+        {pending ? labels?.pending ?? "Negotiating..." : `${labels?.idle ?? "Extend Contract"} (${cost} cr)`}
       </button>
       {state.message ? <p className={`text-xs ${state.ok ? "text-slate-400" : "text-rose-300"}`}>{state.message}</p> : null}
     </form>
@@ -284,10 +313,12 @@ export function ExecuteTradeButton({
   givePlayerId,
   receivePlayerId,
   label,
+  labels,
 }: {
   givePlayerId: string;
   receivePlayerId: string;
   label: string;
+  labels?: ActionLabels;
 }) {
   const [state, action, pending] = useActionState(executeTradeAction, initialState);
 
@@ -300,7 +331,7 @@ export function ExecuteTradeButton({
         disabled={pending}
         className="w-full rounded-2xl border border-violet-300/25 bg-violet-300/12 px-4 py-3 text-sm font-semibold text-violet-100 transition hover:bg-violet-300/20 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {pending ? "Negotiating..." : label}
+        {pending ? labels?.pending ?? "Negotiating..." : label}
       </button>
       {state.message ? <p className={`text-xs ${state.ok ? "text-slate-400" : "text-rose-300"}`}>{state.message}</p> : null}
     </form>
@@ -310,9 +341,11 @@ export function ExecuteTradeButton({
 export function SellPlayerButton({
   playerId,
   value,
+  labels,
 }: {
   playerId: string;
   value: number;
+  labels?: ActionLabels;
 }) {
   const [state, action, pending] = useActionState(sellPlayerAction, initialState);
 
@@ -324,7 +357,7 @@ export function SellPlayerButton({
         disabled={pending}
         className="w-full rounded-2xl border border-rose-300/25 bg-rose-300/10 px-4 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-300/20 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {pending ? "Selling..." : `Sell for ${value} cr`}
+        {pending ? labels?.pending ?? "Selling..." : `${labels?.idle ?? "Sell for"} ${value} cr`}
       </button>
       {state.message ? <p className={`text-xs ${state.ok ? "text-slate-400" : "text-rose-300"}`}>{state.message}</p> : null}
     </form>
@@ -335,10 +368,12 @@ export function OpenPackButton({
   packType,
   label,
   cost,
+  labels,
 }: {
   packType: "standard" | "elite";
   label: string;
   cost: number;
+  labels?: ActionLabels;
 }) {
   const [state, action, pending] = useActionState(openPackAction, initialState);
 
@@ -350,7 +385,7 @@ export function OpenPackButton({
         disabled={pending}
         className="w-full rounded-2xl border border-cyan-300/25 bg-cyan-300/12 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {pending ? "Opening..." : `${label} (${cost} cr)`}
+        {pending ? labels?.pending ?? "Opening..." : `${label} (${cost} cr)`}
       </button>
       {state.message ? <p className={`text-xs ${state.ok ? "text-slate-400" : "text-rose-300"}`}>{state.message}</p> : null}
     </form>

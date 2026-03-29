@@ -28,14 +28,14 @@ export default async function SchedulePage() {
     >
       <div className="grid gap-5">
         {Object.entries(grouped).map(([round, matches]) => (
-          <SectionCard key={round} title={`Round ${round}`}>
+          <SectionCard key={round} title={locale === "zh" ? `第${round}轮` : `Round ${round}`}>
             <div className="grid gap-3">
               {matches.map((match) => (
                 <article key={match.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <p className="font-semibold text-white">
                       {match.awayTeam.abbreviation}
-                      {match.played ? ` ${match.awayScore}` : ""} at {match.homeTeam.abbreviation}
+                      {match.played ? ` ${match.awayScore}` : ""} {locale === "zh" ? "对阵" : "at"} {match.homeTeam.abbreviation}
                       {match.played ? ` ${match.homeScore}` : ""}
                     </p>
                     <p className="text-xs uppercase tracking-[0.2em] text-slate-400">

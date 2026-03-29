@@ -22,27 +22,27 @@ export default async function MarketPage() {
         <MetricCard
           label={t.market.credits}
           value={String(snapshot.profile.credits)}
-          caption="Use credits to sign free agents and train your roster."
+          caption={t.common.marketCreditsCaption}
         />
         <MetricCard
           label={t.market.openSlots}
           value={String(Math.max(0, 12 - snapshot.favoriteTeam.players.length))}
-          caption="You can carry up to 12 players in this MVP."
+          caption={t.common.marketSlotsCaption}
         />
         <MetricCard
           label={t.market.scouting}
           value={String(snapshot.favoriteTeam.scoutingLevel)}
-          caption="Higher scouting makes it easier to build a deeper roster."
+          caption={t.common.marketScoutingCaption}
         />
         <MetricCard
           label={t.market.reservePool}
           value={String(snapshot.reserveCount)}
-          caption="Pack inventory still waiting in the hidden reserve pool."
+          caption={t.common.marketReserveCaption}
         />
         <MetricCard
           label={t.market.capRoom}
           value={`${snapshot.favoriteCapRoom >= 0 ? "+" : ""}$${snapshot.favoriteCapRoom.toLocaleString()}`}
-          caption={`You cannot sign players if salary pushes payroll over $${snapshot.favoriteTeam.budget.toLocaleString()}.`}
+          caption={`${t.common.marketCapCaption} $${snapshot.favoriteTeam.budget.toLocaleString()}.`}
         />
       </section>
 
@@ -51,23 +51,33 @@ export default async function MarketPage() {
           <div className="grid gap-4 lg:grid-cols-2">
           <article className="rounded-[24px] border border-cyan-300/20 bg-[linear-gradient(160deg,rgba(34,211,238,0.18),rgba(255,255,255,0.04))] p-5">
             <p className="text-xs uppercase tracking-[0.25em] text-cyan-100">{t.market.standardPack}</p>
-            <h3 className="mt-3 text-2xl font-semibold text-white">Roster Booster</h3>
+            <h3 className="mt-3 text-2xl font-semibold text-white">{t.common.standardPackName}</h3>
             <p className="mt-2 text-sm text-slate-200">
-              A cheaper way to add fresh talent. Good for depth and rotation upgrades.
+              {t.common.standardPackDesc}
             </p>
             <div className="mt-5">
-              <OpenPackButton packType="standard" label={t.actions.openStandard} cost={260} />
+              <OpenPackButton
+                packType="standard"
+                label={t.actions.openStandard}
+                cost={260}
+                labels={{ idle: t.actions.openStandard, pending: t.actions.opening }}
+              />
             </div>
           </article>
 
           <article className="rounded-[24px] border border-amber-300/20 bg-[linear-gradient(160deg,rgba(251,191,36,0.18),rgba(255,255,255,0.04))] p-5">
             <p className="text-xs uppercase tracking-[0.25em] text-amber-100">{t.market.elitePack}</p>
-            <h3 className="mt-3 text-2xl font-semibold text-white">Premium Drop</h3>
+            <h3 className="mt-3 text-2xl font-semibold text-white">{t.common.elitePackName}</h3>
             <p className="mt-2 text-sm text-slate-200">
-              Better odds at top-end cards and higher immediate upside for your club.
+              {t.common.elitePackDesc}
             </p>
             <div className="mt-5">
-              <OpenPackButton packType="elite" label={t.actions.openElite} cost={520} />
+              <OpenPackButton
+                packType="elite"
+                label={t.actions.openElite}
+                cost={520}
+                labels={{ idle: t.actions.openElite, pending: t.actions.opening }}
+              />
             </div>
           </article>
           </div>
@@ -78,7 +88,7 @@ export default async function MarketPage() {
               <div className="mt-4 grid gap-4">
                 <div className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3">
                   <p className="text-sm text-slate-300">
-                    {snapshot.lastPackReveal.packType === "elite" ? "Elite drop" : "Standard drop"} opened on{" "}
+                    {snapshot.lastPackReveal.packType === "elite" ? t.common.eliteDrop : t.common.standardDrop} {t.common.openedOn}{" "}
                     {new Date(snapshot.lastPackReveal.openedAt).toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",
@@ -92,12 +102,13 @@ export default async function MarketPage() {
                     {snapshot.lastPackReveal.player.firstName} {snapshot.lastPackReveal.player.lastName}
                   </p>
                   <p className="mt-1 text-sm text-slate-300">
-                    {snapshot.lastPackReveal.player.rarity} | {snapshot.lastPackReveal.player.position} | OVR {snapshot.lastPackReveal.player.overall}
+                    {snapshot.lastPackReveal.player.rarity} | {snapshot.lastPackReveal.player.position} | {t.common.ovrShort} {snapshot.lastPackReveal.player.overall}
                   </p>
                 </div>
                 <PlayerShowcaseCard
                   player={snapshot.lastPackReveal.player}
                   href={`/players/${snapshot.lastPackReveal.player.id}`}
+                  locale={locale}
                 />
               </div>
             ) : (
@@ -115,8 +126,12 @@ export default async function MarketPage() {
             const price = player.salary + snapshot.favoriteTeam.scoutingLevel * 80;
             return (
               <div key={player.id} className="grid gap-3">
-                <PlayerShowcaseCard player={player} href={`/players/${player.id}`} />
-                <SignPlayerButton playerId={player.id} price={price} />
+                <PlayerShowcaseCard player={player} href={`/players/${player.id}`} locale={locale} />
+                <SignPlayerButton
+                  playerId={player.id}
+                  price={price}
+                  labels={{ idle: t.actions.signFor, pending: t.actions.signing }}
+                />
               </div>
             );
           })}

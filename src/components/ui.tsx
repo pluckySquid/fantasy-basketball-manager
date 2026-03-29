@@ -2,34 +2,37 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import Image from "next/image";
 import Link from "next/link";
+import { copy, type Locale } from "@/lib/i18n";
 
-function playerTier(overall: number) {
+function playerTier(overall: number, locale: Locale) {
+  const t = copy[locale].common;
   if (overall >= 88) {
-    return { label: "Legend", styles: "bg-amber-300/20 text-amber-100 border-amber-300/30" };
+    return { label: t.legend, styles: "bg-amber-300/20 text-amber-100 border-amber-300/30" };
   }
   if (overall >= 82) {
-    return { label: "Elite", styles: "bg-cyan-300/20 text-cyan-100 border-cyan-300/30" };
+    return { label: t.elite, styles: "bg-cyan-300/20 text-cyan-100 border-cyan-300/30" };
   }
   if (overall >= 76) {
-    return { label: "Starter", styles: "bg-emerald-300/20 text-emerald-100 border-emerald-300/30" };
+    return { label: t.starter, styles: "bg-emerald-300/20 text-emerald-100 border-emerald-300/30" };
   }
-  return { label: "Rotation", styles: "bg-slate-300/10 text-slate-100 border-white/10" };
+  return { label: t.rotation, styles: "bg-slate-300/10 text-slate-100 border-white/10" };
 }
 
-function roleBadge(archetype: string) {
+function roleBadge(archetype: string, locale: Locale) {
+  const t = copy[locale].common;
   if (archetype.includes("Floor General")) {
-    return { label: "Creator", styles: "border-sky-300/30 bg-sky-300/12 text-sky-100" };
+    return { label: t.creator, styles: "border-sky-300/30 bg-sky-300/12 text-sky-100" };
   }
   if (archetype.includes("Rim") || archetype.includes("Glass") || archetype.includes("Big")) {
-    return { label: "Anchor", styles: "border-emerald-300/30 bg-emerald-300/12 text-emerald-100" };
+    return { label: t.anchor, styles: "border-emerald-300/30 bg-emerald-300/12 text-emerald-100" };
   }
   if (archetype.includes("Two-Way")) {
-    return { label: "Two-Way", styles: "border-violet-300/30 bg-violet-300/12 text-violet-100" };
+    return { label: t.twoWay, styles: "border-violet-300/30 bg-violet-300/12 text-violet-100" };
   }
   if (archetype.includes("Athletic")) {
-    return { label: "Slasher", styles: "border-rose-300/30 bg-rose-300/12 text-rose-100" };
+    return { label: t.slasher, styles: "border-rose-300/30 bg-rose-300/12 text-rose-100" };
   }
-  return { label: "Bucket", styles: "border-amber-300/30 bg-amber-300/12 text-amber-100" };
+  return { label: t.bucket, styles: "border-amber-300/30 bg-amber-300/12 text-amber-100" };
 }
 
 function rarityStyles(rarity: "Bronze" | "Silver" | "Gold" | "Platinum") {
@@ -45,28 +48,17 @@ function rarityStyles(rarity: "Bronze" | "Silver" | "Gold" | "Platinum") {
   }
 }
 
-function playerArchetype({
-  scoring,
-  playmaking,
-  rebounding,
-  defense,
-}: {
-  scoring: number;
-  playmaking: number;
-  rebounding: number;
-  defense: number;
-}) {
-  const highest = Math.max(scoring, playmaking, rebounding, defense);
-  if (highest === playmaking) {
-    return "Floor General";
-  }
-  if (highest === defense) {
-    return "Stopper";
-  }
-  if (highest === rebounding) {
-    return "Glass Cleaner";
-  }
-  return "Shot Creator";
+function translateArchetype(archetype: string, locale: Locale) {
+  const t = copy[locale].common;
+  if (archetype === "Floor General") return t.floorGeneral;
+  if (archetype === "Shot Creator") return t.shotCreator;
+  if (archetype === "Pure Scorer") return t.pureScorer;
+  if (archetype === "Two-Way Wing") return t.twoWay;
+  if (archetype === "Athletic Slasher") return t.slasher;
+  if (archetype === "Glass Cleaner") return t.glassCleaner;
+  if (archetype === "Rim Protector") return t.rimProtector;
+  if (archetype === "Playmaking Big") return t.playmakingBig;
+  return archetype;
 }
 
 function hashString(value: string) {
@@ -259,6 +251,7 @@ export function RatingBar({ label, value }: { label: string; value: number }) {
 export function PlayerShowcaseCard({
   player,
   href,
+  locale = "en",
 }: {
   player: {
     id: string;
@@ -279,10 +272,12 @@ export function PlayerShowcaseCard({
     potential: number;
   };
   href: string;
+  locale?: Locale;
 }) {
-  const tier = playerTier(player.overall);
-  const archetype = playerArchetype(player);
-  const role = roleBadge(player.archetype);
+  const t = copy[locale].common;
+  const tier = playerTier(player.overall, locale);
+  const translatedArchetype = translateArchetype(player.archetype, locale);
+  const role = roleBadge(player.archetype, locale);
   const fullName = `${player.firstName} ${player.lastName}`;
 
   return (
@@ -297,7 +292,7 @@ export function PlayerShowcaseCard({
           <p className="text-xs uppercase tracking-[0.25em] text-slate-400">{player.position}</p>
           <h3 className="mt-2 text-xl font-semibold text-white">{fullName}</h3>
           <p className="mt-1 text-sm text-slate-300">
-            {archetype} | Age {player.age}
+            {translatedArchetype} | {t.age} {player.age}
           </p>
         </div>
         <div className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${tier.styles}`}>
@@ -308,29 +303,29 @@ export function PlayerShowcaseCard({
         <span className="rounded-full border border-white/10 bg-slate-950/45 px-2.5 py-1">{player.rarity}</span>
         <span className={`rounded-full border px-2.5 py-1 ${role.styles}`}>{role.label}</span>
         <span className="rounded-full border border-white/10 bg-slate-950/45 px-2.5 py-1">
-          {player.contractYears}Y Deal
+          {player.contractYears}{t.yearsDeal}
         </span>
       </div>
       <div className="mt-5 grid grid-cols-3 gap-3">
         <div className="rounded-2xl bg-slate-950/70 p-3">
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Overall</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t.overall}</p>
           <p className="mt-1 text-3xl font-semibold text-white">{player.overall}</p>
         </div>
         <div className="rounded-2xl bg-slate-950/70 p-3">
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Salary</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t.salary}</p>
           <p className="mt-2 text-lg font-semibold text-white">${player.salary.toLocaleString()}</p>
         </div>
         <div className="rounded-2xl bg-slate-950/70 p-3">
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Fit</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t.fit}</p>
           <p className="mt-2 text-lg font-semibold text-white">{role.label}</p>
         </div>
       </div>
       <div className="mt-4 grid gap-3">
-        <RatingBar label="Scoring" value={player.scoring} />
-        <RatingBar label="Playmaking" value={player.playmaking} />
-        <RatingBar label="Rebounding" value={player.rebounding} />
-        <RatingBar label="Defense" value={player.defense} />
-        <RatingBar label="Potential" value={player.potential} />
+        <RatingBar label={t.scoring} value={player.scoring} />
+        <RatingBar label={t.playmaking} value={player.playmaking} />
+        <RatingBar label={t.rebounding} value={player.rebounding} />
+        <RatingBar label={t.defense} value={player.defense} />
+        <RatingBar label={t.potential} value={player.potential} />
       </div>
     </Link>
   );
