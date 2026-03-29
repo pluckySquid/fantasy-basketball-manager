@@ -82,6 +82,20 @@ export type LineupState = {
   slotsJson: string;
 };
 
+export type PlayerSeasonStatState = {
+  playerId: string;
+  games: number;
+  points: number;
+  rebounds: number;
+  assists: number;
+};
+
+export type PackRevealState = {
+  playerId: string;
+  packType: "standard" | "elite";
+  openedAt: string;
+};
+
 export type LeagueState = {
   season: SeasonState;
   profile: UserProfileState;
@@ -89,6 +103,8 @@ export type LeagueState = {
   players: PlayerState[];
   marketPlayers: PlayerState[];
   reservePlayers: PlayerState[];
+  playerStats: PlayerSeasonStatState[];
+  lastPackReveal: PackRevealState | null;
   lineups: LineupState[];
   matches: MatchState[];
 };

@@ -11,21 +11,34 @@ import {
   type LineupSlots,
   type PlayerState,
   type Position,
+  type TeamState,
 } from "./league-models";
 
 const statePath = resolve(process.cwd(), "data", "league-state.json");
 
 const teamBlueprint = [
-  ["Lakeview", "Falcons", "LVF"],
-  ["Northport", "Pilots", "NPP"],
-  ["Goldhaven", "Comets", "GHC"],
-  ["Redwood", "Forge", "RWF"],
-  ["Riverton", "Kings", "RVK"],
-  ["Summit", "Storm", "SMS"],
-  ["Harbor", "Sharks", "HBS"],
-  ["Westfield", "Volt", "WFV"],
+  ["Boston", "Celtics", "BOS"],
+  ["New York", "Knicks", "NYK"],
+  ["Milwaukee", "Bucks", "MIL"],
+  ["Miami", "Heat", "MIA"],
+  ["Denver", "Nuggets", "DEN"],
+  ["Dallas", "Mavericks", "DAL"],
+  ["Oklahoma City", "Thunder", "OKC"],
+  ["Los Angeles", "Lakers", "LAL"],
 ] as const;
 const rosterBlueprint: Position[] = ["PG", "SG", "SF", "PF", "C", "PG", "SF", "PF"];
+
+type TeamWithRoster = TeamState & {
+  players: PlayerState[];
+  lineup: LeagueState["lineups"][number] | null;
+};
+
+type PlayerGameLine = {
+  playerId: string;
+  points: number;
+  rebounds: number;
+  assists: number;
+};
 
 type RealPlayerSeed = {
   firstName: string;
@@ -220,6 +233,26 @@ function buildSchedule(teamIds: string[]) {
   return [...rounds, ...rounds.map((fixtures) => fixtures.map((fixture) => ({ homeTeamId: fixture.awayTeamId, awayTeamId: fixture.homeTeamId })))];
 }
 
+function buildTeamLookup(state: LeagueState) {
+  return new Map(state.teams.map((team) => [team.id, team]));
+}
+
+function buildPlayerLookup(state: LeagueState) {
+  return new Map(
+    [...state.players, ...state.marketPlayers, ...state.reservePlayers].map((player) => [player.id, player]),
+  );
+}
+
+function createStatSheet(players: PlayerState[]) {
+  return players.map((player) => ({
+    playerId: player.id,
+    games: 0,
+    points: 0,
+    rebounds: 0,
+    assists: 0,
+  }));
+}
+
 function buildInitialState(): LeagueState {
   const seasonId = randomUUID();
   const teams = teamBlueprint.map(([city, nickname, abbreviation]) => ({
@@ -287,12 +320,14 @@ function buildInitialState(): LeagueState {
   );
 
   return {
-    season: { id: seasonId, name: "Fictional League Season 1", currentRound: 1, totalRounds: 14, status: "IN_PROGRESS" },
+    season: { id: seasonId, name: "Pro Hoops Season 1", currentRound: 1, totalRounds: 14, status: "IN_PROGRESS" },
     profile: { id: randomUUID(), managerName: "Solo Manager", favoriteTeamId: teams[0].id, seasonId, credits: 1200 },
     teams,
     players,
     marketPlayers,
     reservePlayers,
+    playerStats: createStatSheet([...players, ...marketPlayers, ...reservePlayers]),
+    lastPackReveal: null,
     lineups,
     matches,
   };
@@ -319,10 +354,133 @@ function enrichTeam(state: LeagueState, teamId: string) {
   };
 }
 
+function ensurePlayerStatEntries(state: LeagueState, players: PlayerState[]) {
+  const known = new Set(state.playerStats.map((entry) => entry.playerId));
+  for (const player of players) {
+    if (!known.has(player.id)) {
+      state.playerStats.push({
+        playerId: player.id,
+        games: 0,
+        points: 0,
+        rebounds: 0,
+        assists: 0,
+      });
+    }
+  }
+}
+
+function ensureCompleteState(state: LeagueState) {
+  if (!state.marketPlayers) {
+    state.marketPlayers = [];
+  }
+  if (!state.reservePlayers) {
+    state.reservePlayers = [];
+  }
+  if (!state.playerStats) {
+    state.playerStats = [];
+  }
+  if (state.lastPackReveal === undefined) {
+    state.lastPackReveal = null;
+  }
+  ensurePlayerStatEntries(state, [...state.players, ...state.marketPlayers, ...state.reservePlayers]);
+}
+
+function parseTopPerformer(line: PlayerGameLine, playerLookup: Map<string, PlayerState>) {
+  const player = playerLookup.get(line.playerId)!;
+  return `${player.firstName} ${player.lastName}: ${line.points} PTS, ${line.rebounds} REB, ${line.assists} AST`;
+}
+
+function buildTeamBoxScore(team: TeamWithRoster, score: number): PlayerGameLine[] {
+  const lineup = team.lineup
+    ? parseLineupSlots(team.lineup.slotsJson)
+    : buildDefaultLineup(team.players.map((player) => player.id));
+  const orderedIds = [
+    lineup.pgId,
+    lineup.sgId,
+    lineup.sfId,
+    lineup.pfId,
+    lineup.cId,
+    lineup.benchOneId,
+    lineup.benchTwoId,
+    lineup.benchThreeId,
+  ];
+  const orderedPlayers = orderedIds
+    .map((id) => team.players.find((player) => player.id === id))
+    .filter((player): player is PlayerState => Boolean(player));
+
+  const weights = orderedPlayers.map((player, index) => {
+    const usageBonus = index < 5 ? 1.24 : 0.72;
+    return player.scoring * 0.52 + player.playmaking * 0.12 + player.rebounding * 0.06 + usageBonus * 10;
+  });
+  const totalWeight = weights.reduce((sum, value) => sum + value, 0) || 1;
+  const rawPoints = orderedPlayers.map((player, index) => ({
+    player,
+    points: Math.max(4, Math.round(score * (weights[index] / totalWeight) + (index % 2 === 0 ? 1 : -1))),
+  }));
+  const pointTotal = rawPoints.reduce((sum, entry) => sum + entry.points, 0);
+  rawPoints[0].points += score - pointTotal;
+
+  return rawPoints.map(({ player, points }, index) => ({
+    playerId: player.id,
+    points: Math.max(3, points),
+    rebounds: Math.max(1, Math.round(player.rebounding * (index < 5 ? 0.12 : 0.08) + (player.position === "C" ? 3 : 0))),
+    assists: Math.max(1, Math.round(player.playmaking * (index < 5 ? 0.09 : 0.05) + (player.position === "PG" ? 3 : 0))),
+  }));
+}
+
+function updatePlayerStats(state: LeagueState, lines: PlayerGameLine[]) {
+  const statsByPlayer = new Map(state.playerStats.map((entry) => [entry.playerId, entry]));
+  for (const line of lines) {
+    let stat = statsByPlayer.get(line.playerId);
+    if (!stat) {
+      stat = { playerId: line.playerId, games: 0, points: 0, rebounds: 0, assists: 0 };
+      state.playerStats.push(stat);
+      statsByPlayer.set(line.playerId, stat);
+    }
+    stat.games += 1;
+    stat.points += line.points;
+    stat.rebounds += line.rebounds;
+    stat.assists += line.assists;
+  }
+}
+
+function buildFreeAgentTeam() {
+  return {
+    id: "MARKET",
+    name: "Free Agent Market",
+    city: "Open",
+    abbreviation: "FA",
+    budget: 0,
+    trainingLevel: 0,
+    medicalLevel: 0,
+    scoutingLevel: 0,
+    wins: 0,
+    losses: 0,
+    pointsFor: 0,
+    pointsAgainst: 0,
+  };
+}
+
+function averagePerGame(total: number, games: number) {
+  return games === 0 ? 0 : total / games;
+}
+
+function standingsSorter(left: TeamWithRoster, right: TeamWithRoster) {
+  const winDiff = right.wins - left.wins;
+  if (winDiff !== 0) {
+    return winDiff;
+  }
+  const pointDiff = right.pointsFor - right.pointsAgainst - (left.pointsFor - left.pointsAgainst);
+  if (pointDiff !== 0) {
+    return pointDiff;
+  }
+  return right.pointsFor - left.pointsFor;
+}
+
 export async function resetLeague() {
   const state = buildInitialState();
   await writeLeagueState(state);
-  return { ok: true as const, message: "League reset with a fresh fictional season." };
+  return { ok: true as const, message: "League reset with a fresh pro hoops season." };
 }
 
 export async function ensureLeagueReady() {
@@ -336,12 +494,17 @@ export async function ensureLeagueReady() {
       favoriteTeam?.scoutingLevel === undefined ||
       state.marketPlayers === undefined ||
       state.reservePlayers === undefined ||
+      state.playerStats === undefined ||
+      state.lastPackReveal === undefined ||
       state.players[0]?.rarity === undefined ||
       state.players[0]?.archetype === undefined ||
       state.players[0]?.potential === undefined
     ) {
       await resetLeague();
+      return;
     }
+    ensureCompleteState(state);
+    await writeLeagueState(state);
   } catch {
     await resetLeague();
   }
@@ -350,15 +513,66 @@ export async function ensureLeagueReady() {
 export async function getGameSnapshot() {
   await ensureLeagueReady();
   const state = await readLeagueState();
+  ensureCompleteState(state);
+  const playerLookup = buildPlayerLookup(state);
+  const teamLookup = buildTeamLookup(state);
   const favoriteTeam = enrichTeam(state, state.profile.favoriteTeamId);
-  const teams = state.teams.map((team) => enrichTeam(state, team.id));
+  const teams = state.teams.map((team) => enrichTeam(state, team.id)).sort(standingsSorter);
   const matches = state.matches
     .map((match) => ({
       ...match,
-      homeTeam: state.teams.find((team) => team.id === match.homeTeamId)!,
-      awayTeam: state.teams.find((team) => team.id === match.awayTeamId)!,
+      homeTeam: teamLookup.get(match.homeTeamId)!,
+      awayTeam: teamLookup.get(match.awayTeamId)!,
     }))
     .sort((left, right) => left.round - right.round);
+
+  const leaderPool = state.playerStats
+    .map((stat) => {
+      const player = playerLookup.get(stat.playerId);
+      if (!player) {
+        return null;
+      }
+
+      const team = teamLookup.get(player.teamId) ?? buildFreeAgentTeam();
+      return {
+        ...stat,
+        player,
+        team,
+        ppg: averagePerGame(stat.points, stat.games),
+        rpg: averagePerGame(stat.rebounds, stat.games),
+        apg: averagePerGame(stat.assists, stat.games),
+      };
+    })
+    .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
+    .filter((entry) => entry.games > 0);
+
+  const scoringLeaders = [...leaderPool].sort((left, right) => right.ppg - left.ppg).slice(0, 5);
+  const reboundLeaders = [...leaderPool].sort((left, right) => right.rpg - left.rpg).slice(0, 5);
+  const assistLeaders = [...leaderPool].sort((left, right) => right.apg - left.apg).slice(0, 5);
+  const mvpLadder = [...leaderPool]
+    .map((entry) => {
+      const teamGames = entry.team.wins + entry.team.losses;
+      const teamWinRate = teamGames === 0 ? 0.5 : entry.team.wins / teamGames;
+      return {
+        ...entry,
+        mvpScore:
+          entry.ppg * 1.2 +
+          entry.rpg * 0.8 +
+          entry.apg +
+          teamWinRate * 18 +
+          entry.player.overall * 0.12 +
+          entry.games * 0.08,
+      };
+    })
+    .sort((left, right) => right.mvpScore - left.mvpScore)
+    .slice(0, 5);
+
+  const lastPackReveal = state.lastPackReveal
+    ? {
+        ...state.lastPackReveal,
+        player: playerLookup.get(state.lastPackReveal.playerId) ?? null,
+      }
+    : null;
 
   return {
     profile: { ...state.profile, season: state.season },
@@ -371,6 +585,12 @@ export async function getGameSnapshot() {
     recentMatches: matches.filter((match) => match.played).slice(-5).reverse(),
     nextMatches: matches.filter((match) => !match.played).slice(0, 4),
     marketPlayers: [...state.marketPlayers].sort((left, right) => right.overall - left.overall),
+    reserveCount: state.reservePlayers.length,
+    lastPackReveal,
+    scoringLeaders,
+    reboundLeaders,
+    assistLeaders,
+    mvpLadder,
   };
 }
 
@@ -406,6 +626,8 @@ export async function saveFavoriteLineup(formData: FormData) {
 export async function simulateNextRound() {
   await ensureLeagueReady();
   const state = await readLeagueState();
+  ensureCompleteState(state);
+  const playerLookup = buildPlayerLookup(state);
   const nextRound = state.matches.find((match) => !match.played);
 
   if (!nextRound) {
@@ -420,13 +642,20 @@ export async function simulateNextRound() {
     const awayTeam = enrichTeam(state, match.awayTeamId);
     const outcome = simulateMatch(match, homeTeam, awayTeam);
     const homeWin = outcome.homeScore >= outcome.awayScore;
+    const homeBoxScore = buildTeamBoxScore(homeTeam, outcome.homeScore);
+    const awayBoxScore = buildTeamBoxScore(awayTeam, outcome.awayScore);
+    const homeStar = [...homeBoxScore].sort((left, right) => right.points - left.points)[0];
+    const awayStar = [...awayBoxScore].sort((left, right) => right.points - left.points)[0];
+
+    updatePlayerStats(state, homeBoxScore);
+    updatePlayerStats(state, awayBoxScore);
 
     Object.assign(match, {
       played: true,
       homeScore: outcome.homeScore,
       awayScore: outcome.awayScore,
-      homeTopPerformer: outcome.homeTopPerformer,
-      awayTopPerformer: outcome.awayTopPerformer,
+      homeTopPerformer: parseTopPerformer(homeStar, playerLookup),
+      awayTopPerformer: parseTopPerformer(awayStar, playerLookup),
       summary: outcome.summary,
     });
 
@@ -542,6 +771,7 @@ export async function trainPlayer(playerId: string, focus: "scoring" | "playmaki
 export async function signMarketPlayer(playerId: string) {
   await ensureLeagueReady();
   const state = await readLeagueState();
+  ensureCompleteState(state);
   const player = state.marketPlayers.find((entry) => entry.id === playerId);
   const team = state.teams.find((entry) => entry.id === state.profile.favoriteTeamId)!;
 
@@ -560,6 +790,7 @@ export async function signMarketPlayer(playerId: string) {
   state.profile.credits -= price;
   state.marketPlayers = state.marketPlayers.filter((entry) => entry.id !== playerId);
   state.players.push({ ...player, teamId: state.profile.favoriteTeamId, morale: Math.min(99, player.morale + 5) });
+  ensurePlayerStatEntries(state, [player]);
 
   await writeLeagueState(state);
   return { ok: true as const, message: `${player.firstName} ${player.lastName} joined your club.` };
@@ -568,6 +799,7 @@ export async function signMarketPlayer(playerId: string) {
 export async function sellRosterPlayer(playerId: string) {
   await ensureLeagueReady();
   const state = await readLeagueState();
+  ensureCompleteState(state);
   const player = state.players.find((entry) => entry.id === playerId && entry.teamId === state.profile.favoriteTeamId);
 
   if (!player) {
@@ -590,16 +822,20 @@ export async function sellRosterPlayer(playerId: string) {
     const rosterIds = state.players
       .filter((entry) => entry.teamId === state.profile.favoriteTeamId)
       .map((entry) => entry.id);
-    const replacements = [...rosterIds];
-    const normalized = Object.fromEntries(
-      Object.entries(parsed).map(([slot, id]) => {
-        if (id !== playerId) {
-          return [slot, id];
-        }
-        const replacement = replacements.find((candidate) => !Object.values(parsed).includes(candidate) || candidate === id) ?? rosterIds[0];
-        return [slot, replacement];
-      }),
-    ) as LineupSlots;
+    const used = new Set<string>();
+    const normalized = {} as LineupSlots;
+    for (const slot of lineupOrder) {
+      const current = parsed[slot];
+      if (current !== playerId && rosterIds.includes(current) && !used.has(current)) {
+        normalized[slot] = current;
+        used.add(current);
+        continue;
+      }
+
+      const replacement = rosterIds.find((candidate) => !used.has(candidate)) ?? rosterIds[0];
+      normalized[slot] = replacement;
+      used.add(replacement);
+    }
     lineup.slotsJson = stringifyLineupSlots(normalized);
   }
 
@@ -610,6 +846,7 @@ export async function sellRosterPlayer(playerId: string) {
 export async function openPack(type: "standard" | "elite") {
   await ensureLeagueReady();
   const state = await readLeagueState();
+  ensureCompleteState(state);
   const rosterSize = state.players.filter((entry) => entry.teamId === state.profile.favoriteTeamId).length;
   if (rosterSize >= 12) {
     return { ok: false as const, message: "Your roster is full. Sell a player before opening a pack." };
@@ -620,7 +857,7 @@ export async function openPack(type: "standard" | "elite") {
     return { ok: false as const, message: `Not enough credits. ${type} pack costs ${cost}.` };
   }
   if (state.reservePlayers.length === 0) {
-    return { ok: false as const, message: "No more real-player packs are available in this build." };
+    return { ok: false as const, message: "No more player packs are available in this build." };
   }
 
   state.profile.credits -= cost;
@@ -635,8 +872,8 @@ export async function openPack(type: "standard" | "elite") {
           rebounding: Math.min(98, player.rebounding + 4),
           defense: Math.min(98, player.defense + 4),
           stamina: Math.min(98, player.stamina + 3),
-          rarity: (player.overall >= 82 ? "Platinum" : "Gold") as PlayerState["rarity"],
-          potential: Math.min(99, player.potential + 5),
+          rarity: (player.overall >= 86 ? "Platinum" : "Gold") as PlayerState["rarity"],
+          potential: Math.min(99, player.potential + 4),
         }
       : player;
   const finalPlayer = {
@@ -645,6 +882,12 @@ export async function openPack(type: "standard" | "elite") {
     overall: Math.min(boosted.potential, normalizePlayerOverall(boosted)),
   };
   state.players.push(finalPlayer);
+  ensurePlayerStatEntries(state, [finalPlayer]);
+  state.lastPackReveal = {
+    playerId: finalPlayer.id,
+    packType: type,
+    openedAt: new Date().toISOString(),
+  };
   await writeLeagueState(state);
   return {
     ok: true as const,
@@ -681,28 +924,17 @@ export function getStaffDepartments(team: LeagueState["teams"][number]) {
 export async function getPlayerById(playerId: string) {
   await ensureLeagueReady();
   const state = await readLeagueState();
-  const player = state.players.find((entry) => entry.id === playerId) ?? state.marketPlayers.find((entry) => entry.id === playerId);
+  ensureCompleteState(state);
+  const player =
+    state.players.find((entry) => entry.id === playerId) ??
+    state.marketPlayers.find((entry) => entry.id === playerId) ??
+    state.reservePlayers.find((entry) => entry.id === playerId);
   if (!player) {
     return null;
   }
 
   return {
     ...player,
-    team:
-      state.teams.find((team) => team.id === player.teamId) ??
-      {
-        id: "MARKET",
-        name: "Free Agent Market",
-        city: "Open",
-        abbreviation: "FA",
-        budget: 0,
-        trainingLevel: 0,
-        medicalLevel: 0,
-        scoutingLevel: 0,
-        wins: 0,
-        losses: 0,
-        pointsFor: 0,
-        pointsAgainst: 0,
-      },
+    team: state.teams.find((team) => team.id === player.teamId) ?? buildFreeAgentTeam(),
   };
 }

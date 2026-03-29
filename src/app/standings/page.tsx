@@ -1,28 +1,91 @@
 import { AppShell } from "@/components/app-shell";
-import { SectionCard } from "@/components/ui";
+import { MetricCard, SectionCard } from "@/components/ui";
 import { getGameSnapshot } from "@/lib/game-state";
 
 export default async function StandingsPage() {
   const snapshot = await getGameSnapshot();
-  const standings = [...snapshot.teams].sort((left, right) => {
-    const winDiff = right.wins - left.wins;
-    if (winDiff !== 0) {
-      return winDiff;
-    }
-
-    const pointDiff = right.pointsFor - right.pointsAgainst - (left.pointsFor - left.pointsAgainst);
-    if (pointDiff !== 0) {
-      return pointDiff;
-    }
-
-    return right.pointsFor - left.pointsFor;
-  });
+  const standings = [...snapshot.teams];
+  const scoringLeader = snapshot.scoringLeaders[0];
+  const assistLeader = snapshot.assistLeaders[0];
+  const reboundLeader = snapshot.reboundLeaders[0];
 
   return (
     <AppShell
       title="League Standings"
       subtitle="Wins decide placement first, then point differential, then total points scored."
     >
+      <section className="mb-5 grid gap-4 lg:grid-cols-3">
+        <MetricCard
+          label="Scoring Leader"
+          value={scoringLeader ? `${scoringLeader.player.firstName} ${scoringLeader.player.lastName}` : "No games yet"}
+          caption={scoringLeader ? `${scoringLeader.ppg.toFixed(1)} PPG | ${scoringLeader.team.abbreviation}` : "Simulate a round to unlock leaders."}
+        />
+        <MetricCard
+          label="Assist Leader"
+          value={assistLeader ? `${assistLeader.player.firstName} ${assistLeader.player.lastName}` : "No games yet"}
+          caption={assistLeader ? `${assistLeader.apg.toFixed(1)} APG | ${assistLeader.team.abbreviation}` : "Ball movement crowns this category."}
+        />
+        <MetricCard
+          label="Rebound Leader"
+          value={reboundLeader ? `${reboundLeader.player.firstName} ${reboundLeader.player.lastName}` : "No games yet"}
+          caption={reboundLeader ? `${reboundLeader.rpg.toFixed(1)} RPG | ${reboundLeader.team.abbreviation}` : "Interior play starts here."}
+        />
+      </section>
+
+      <section className="mb-5 grid gap-5 xl:grid-cols-[1.5fr_1fr]">
+        <SectionCard title="MVP Ladder">
+          <div className="grid gap-3">
+            {snapshot.mvpLadder.length === 0 ? (
+              <p className="text-sm text-slate-300">No MVP race yet. Simulate the opening round to seed the leaderboard.</p>
+            ) : (
+              snapshot.mvpLadder.map((entry, index) => (
+                <article key={entry.player.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.25em] text-amber-200">#{index + 1} MVP Candidate</p>
+                    <p className="mt-2 text-lg font-semibold text-white">
+                      {entry.player.firstName} {entry.player.lastName}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-300">
+                      {entry.team.name} | {entry.ppg.toFixed(1)} PPG | {entry.rpg.toFixed(1)} RPG | {entry.apg.toFixed(1)} APG
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-right">
+                    <p className="text-xs uppercase tracking-[0.2em] text-amber-100">MVP Score</p>
+                    <p className="mt-1 text-2xl font-semibold text-white">{entry.mvpScore.toFixed(1)}</p>
+                  </div>
+                </article>
+              ))
+            )}
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Category Leaders">
+          <div className="grid gap-4">
+            {[
+              { label: "Points", rows: snapshot.scoringLeaders, stat: "ppg" as const, suffix: "PPG" },
+              { label: "Assists", rows: snapshot.assistLeaders, stat: "apg" as const, suffix: "APG" },
+              { label: "Rebounds", rows: snapshot.reboundLeaders, stat: "rpg" as const, suffix: "RPG" },
+            ].map((section) => (
+              <div key={section.label} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="text-xs uppercase tracking-[0.25em] text-slate-400">{section.label}</p>
+                <div className="mt-3 grid gap-2">
+                  {section.rows.slice(0, 3).map((entry) => (
+                    <div key={`${section.label}-${entry.player.id}`} className="flex items-center justify-between text-sm">
+                      <p className="text-white">
+                        {entry.player.firstName} {entry.player.lastName}
+                      </p>
+                      <p className="text-slate-300">
+                        {entry[section.stat].toFixed(1)} {section.suffix}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      </section>
+
       <SectionCard title={`${snapshot.profile.season.name} Table`}>
         <div className="overflow-hidden rounded-[24px] border border-white/10">
           <table className="min-w-full divide-y divide-white/10 text-left text-sm">
