@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
-import { SellPlayerButton } from "@/components/action-forms";
+import { ExtendContractButton, SellPlayerButton } from "@/components/action-forms";
 import { MetricCard, PlayerShowcaseCard, SectionCard } from "@/components/ui";
 import { getGameSnapshot } from "@/lib/game-state";
 
@@ -51,6 +51,35 @@ export default async function RosterPage() {
               />
             </div>
           ))}
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Contract Desk">
+        <div className="grid gap-4 lg:grid-cols-2">
+          {snapshot.expiringContracts.length === 0 ? (
+            <p className="text-sm text-slate-300">No urgent contract decisions right now. Your key pieces are locked in beyond this season.</p>
+          ) : (
+            snapshot.expiringContracts.map((player) => (
+              <article key={`contract-${player.id}`} className="rounded-[24px] border border-white/10 bg-white/5 p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-lg font-semibold text-white">
+                      {player.firstName} {player.lastName}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-300">
+                      {player.position} | OVR {player.overall} | {player.contractYears}Y remaining
+                    </p>
+                  </div>
+                  <div className="rounded-full border border-amber-300/25 bg-amber-300/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-100">
+                    Action Needed
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <ExtendContractButton playerId={player.id} cost={player.extensionCost} />
+                </div>
+              </article>
+            ))
+          )}
         </div>
       </SectionCard>
 

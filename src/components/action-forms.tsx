@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import {
+  extendContractAction,
   openPackAction,
   resetLeagueAction,
   saveLineupAction,
@@ -190,6 +191,30 @@ export function TrainPlayerForm({ playerId }: { playerId: string }) {
         className="rounded-2xl bg-emerald-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-300"
       >
         {pending ? "Training..." : "Run Training"}
+      </button>
+      {state.message ? <p className={`text-xs ${state.ok ? "text-slate-400" : "text-rose-300"}`}>{state.message}</p> : null}
+    </form>
+  );
+}
+
+export function ExtendContractButton({
+  playerId,
+  cost,
+}: {
+  playerId: string;
+  cost: number;
+}) {
+  const [state, action, pending] = useActionState(extendContractAction, initialState);
+
+  return (
+    <form action={action} className="space-y-2">
+      <input type="hidden" name="playerId" value={playerId} />
+      <button
+        type="submit"
+        disabled={pending}
+        className="w-full rounded-2xl border border-sky-300/25 bg-sky-300/12 px-4 py-3 text-sm font-semibold text-sky-100 transition hover:bg-sky-300/20 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {pending ? "Negotiating..." : `Extend Contract (${cost} cr)`}
       </button>
       {state.message ? <p className={`text-xs ${state.ok ? "text-slate-400" : "text-rose-300"}`}>{state.message}</p> : null}
     </form>

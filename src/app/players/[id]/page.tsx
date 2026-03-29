@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
-import { TrainPlayerForm } from "@/components/action-forms";
+import { ExtendContractButton, TrainPlayerForm } from "@/components/action-forms";
 import { PlayerPortrait, RatingBar, SectionCard } from "@/components/ui";
 import { getPlayerById } from "@/lib/game-state";
 
@@ -93,7 +93,15 @@ export default async function PlayerDetailPage({
         </SectionCard>
 
         <SectionCard title="Training Facility">
-          <TrainPlayerForm playerId={player.id} />
+          <div className="grid gap-4">
+            <TrainPlayerForm playerId={player.id} />
+            {player.team.id !== "MARKET" ? (
+              <ExtendContractButton
+                playerId={player.id}
+                cost={Math.round(player.salary * 0.6 + player.overall * 18 + Math.max(0, 3 - player.contractYears) * 120)}
+              />
+            ) : null}
+          </div>
         </SectionCard>
       </div>
     </AppShell>

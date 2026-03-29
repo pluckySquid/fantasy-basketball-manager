@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import {
+  extendContract,
   openPack,
   resetLeague,
   saveFavoriteLineup,
@@ -19,6 +20,7 @@ function refreshLeaguePaths() {
   revalidatePath("/market");
   revalidatePath("/schedule");
   revalidatePath("/standings");
+  revalidatePath("/stats");
   revalidatePath("/players/[id]", "page");
 }
 
@@ -107,6 +109,16 @@ export async function trainPlayerAction(
   }
 
   const result = await trainPlayer(playerId, focus);
+  refreshLeaguePaths();
+  return result;
+}
+
+export async function extendContractAction(
+  _: { ok: boolean; message: string },
+  formData: FormData,
+) {
+  const playerId = String(formData.get("playerId") ?? "");
+  const result = await extendContract(playerId);
   refreshLeaguePaths();
   return result;
 }

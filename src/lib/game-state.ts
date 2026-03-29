@@ -595,6 +595,20 @@ export async function getGameSnapshot() {
         player: playerLookup.get(state.lastPackReveal.playerId) ?? null,
       }
     : null;
+  const seasonAwards = {
+    champion: state.season.status === "COMPLETE" ? teams[0] ?? null : null,
+    mvp: mvpLadder[0] ?? null,
+    scoringChampion: scoringLeaders[0] ?? null,
+    assistChampion: assistLeaders[0] ?? null,
+    reboundChampion: reboundLeaders[0] ?? null,
+  };
+  const expiringContracts = favoriteTeam.players
+    .filter((player) => player.contractYears <= 1)
+    .map((player) => ({
+      ...player,
+      extensionCost: contractExtensionCost(player),
+    }))
+    .sort((left, right) => right.overall - left.overall);
 
   return {
     profile: { ...state.profile, season: state.season },
@@ -616,6 +630,8 @@ export async function getGameSnapshot() {
     reboundLeaders,
     assistLeaders,
     mvpLadder,
+    seasonAwards,
+    expiringContracts,
   };
 }
 
@@ -625,6 +641,10 @@ function staffUpgradeCost(level: number) {
 
 function packCost(type: "standard" | "elite") {
   return type === "elite" ? 520 : 260;
+}
+
+function contractExtensionCost(player: PlayerState) {
+  return Math.round(player.salary * 0.6 + player.overall * 18 + Math.max(0, 3 - player.contractYears) * 120);
 }
 
 export async function saveFavoriteLineup(formData: FormData) {
@@ -793,6 +813,38 @@ export async function trainPlayer(playerId: string, focus: "scoring" | "playmaki
 
   await writeLeagueState(state);
   return { ok: true as const, message: `${player.firstName} ${player.lastName} improved ${focus}.` };
+}
+
+export async function extendContract(playerId: string) {
+  await ensureLeagueReady();
+  const state = await readLeagueState();
+  const player = state.players.find((entry) => entry.id === playerId && entry.teamId === state.profile.favoriteTeamId);
+
+  if (!player) {
+    return { ok: false as const, message: "That player is not on your roster." };
+  }
+  if (player.contractYears >= 5) {
+    return { ok: false as const, message: "This player is already on a long-term deal." };
+  }
+
+  const cost = contractExtensionCost(player);
+  if (state.profile.credits < cost) {
+    return { ok: false as const, message: `Not enough credits. Extension costs ${cost}.` };
+  }
+
+  state.profile.credits -= cost;
+  state.players = state.players.map((entry) =>
+    entry.id === playerId
+      ? {
+          ...entry,
+          contractYears: Math.min(5, entry.contractYears + 1),
+          morale: Math.min(99, entry.morale + 4),
+        }
+      : entry,
+  );
+
+  await writeLeagueState(state);
+  return { ok: true as const, message: `${player.firstName} ${player.lastName} signed a one-year extension.` };
 }
 
 export async function signMarketPlayer(playerId: string) {

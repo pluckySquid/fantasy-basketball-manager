@@ -79,6 +79,15 @@ export default async function MarketPage() {
                     })}
                   </p>
                 </div>
+                <div className="rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.12),transparent_48%),linear-gradient(180deg,rgba(15,23,42,0.9),rgba(2,6,23,0.95))] p-4 text-center">
+                  <p className="text-xs uppercase tracking-[0.35em] text-amber-200">Card Unlocked</p>
+                  <p className="mt-2 text-3xl font-semibold text-white">
+                    {snapshot.lastPackReveal.player.firstName} {snapshot.lastPackReveal.player.lastName}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-300">
+                    {snapshot.lastPackReveal.player.rarity} | {snapshot.lastPackReveal.player.position} | OVR {snapshot.lastPackReveal.player.overall}
+                  </p>
+                </div>
                 <PlayerShowcaseCard
                   player={snapshot.lastPackReveal.player}
                   href={`/players/${snapshot.lastPackReveal.player.id}`}
