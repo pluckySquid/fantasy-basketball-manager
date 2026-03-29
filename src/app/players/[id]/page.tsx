@@ -3,7 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { ExtendContractButton, TrainPlayerForm } from "@/components/action-forms";
 import { PlayerPortrait, RatingBar, SectionCard } from "@/components/ui";
 import { getPlayerById } from "@/lib/game-state";
-import { buildNav, copy, getLocale } from "@/lib/i18n";
+import { buildNav, copy, getLocale, translateArchetype, translateRarity } from "@/lib/i18n";
 
 export default async function PlayerDetailPage({
   params,
@@ -46,8 +46,8 @@ export default async function PlayerDetailPage({
                 <p className="mt-3 text-3xl font-semibold text-white">{player.overall}</p>
                 <p className="text-sm text-slate-300">{locale === "zh" ? "综合能力评分" : "Overall rating"}</p>
               </div>
-              <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-amber-200">
-                {player.rarity} | {t.player.archetype}: {player.archetype}
+              <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold tracking-[0.08em] text-amber-200">
+                {translateRarity(player.rarity, locale)} | {t.player.archetype}: {translateArchetype(player.archetype, locale)}
               </div>
             </div>
             <div className="mt-6 grid gap-3 text-sm text-slate-200 sm:grid-cols-2">
@@ -59,7 +59,7 @@ export default async function PlayerDetailPage({
               <p>{t.player.morale}: {player.morale}</p>
               <p>{t.player.team}: {player.team.abbreviation}</p>
               <p>{t.player.potential}: {player.potential}</p>
-              <p>{t.player.archetype}: {player.archetype}</p>
+              <p>{t.player.archetype}: {translateArchetype(player.archetype, locale)}</p>
             </div>
             <div className="mt-5 grid gap-3 rounded-[20px] border border-white/10 bg-slate-950/55 p-4 text-sm sm:grid-cols-4">
               <div>

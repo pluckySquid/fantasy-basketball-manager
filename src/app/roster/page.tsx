@@ -3,7 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { ExtendContractButton, SellPlayerButton } from "@/components/action-forms";
 import { MetricCard, PlayerShowcaseCard, SectionCard } from "@/components/ui";
 import { getGameSnapshot } from "@/lib/game-state";
-import { buildNav, copy, getLocale } from "@/lib/i18n";
+import { buildNav, copy, getLocale, translateChemistryNote } from "@/lib/i18n";
 
 export default async function RosterPage() {
   const locale = await getLocale();
@@ -43,7 +43,7 @@ export default async function RosterPage() {
         <MetricCard
           label={t.roster.chemistry}
           value={String(snapshot.favoriteChemistry.score)}
-          caption={snapshot.favoriteChemistry.notes[0] ?? t.common.rosterChemistryCaption}
+          caption={snapshot.favoriteChemistry.notes[0] ? translateChemistryNote(snapshot.favoriteChemistry.notes[0], locale) : t.common.rosterChemistryCaption}
         />
       </section>
 

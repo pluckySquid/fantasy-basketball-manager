@@ -2,7 +2,7 @@ import { AppShell } from "@/components/app-shell";
 import { LineupForm } from "@/components/action-forms";
 import { MetricCard, SectionCard } from "@/components/ui";
 import { getGameSnapshot } from "@/lib/game-state";
-import { buildNav, copy, getLocale } from "@/lib/i18n";
+import { buildNav, copy, getLocale, translateChemistryNote } from "@/lib/i18n";
 
 export default async function LineupPage() {
   const locale = await getLocale();
@@ -63,7 +63,7 @@ export default async function LineupPage() {
             <p>{locale === "zh" ? "替补席可以放入阵中任何剩余球员。" : "Bench slots can use any remaining player on the roster."}</p>
             <p>{locale === "zh" ? "组织点、锋线和内线支柱越平衡，化学反应和球队强度越高。" : "Balanced creators, wings, and interior anchors raise chemistry and team strength."}</p>
             {snapshot.favoriteChemistry.notes.map((note) => (
-              <p key={note}>{note}</p>
+              <p key={note}>{translateChemistryNote(note, locale)}</p>
             ))}
           </div>
         </SectionCard>

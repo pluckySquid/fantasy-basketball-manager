@@ -224,6 +224,10 @@ export const copy = {
       pureScorer: "Pure Scorer",
       rimProtector: "Rim Protector",
       playmakingBig: "Playmaking Big",
+      bronze: "Bronze",
+      silver: "Silver",
+      gold: "Gold",
+      platinum: "Platinum",
       recordCaption: "League place updates after each simulated round.",
       strengthCaption: "Weighted from your active lineup, stamina, and morale.",
       chemistryFallback: "Build a balanced starting five.",
@@ -446,6 +450,10 @@ export const copy = {
       pureScorer: "纯得分手",
       rimProtector: "护框者",
       playmakingBig: "策应内线",
+      bronze: "青铜",
+      silver: "白银",
+      gold: "黄金",
+      platinum: "传奇",
       recordCaption: "每模拟一轮后都会更新联赛排名。",
       strengthCaption: "根据当前阵容、体能和士气综合计算。",
       chemistryFallback: "尽量搭配更平衡的首发五人。",
@@ -485,4 +493,63 @@ export function buildNav(locale: Locale) {
     { href: "/standings", label: t.nav.standings },
     { href: "/stats", label: t.nav.stats },
   ];
+}
+
+export function translateRarity(rarity: string, locale: Locale) {
+  if (locale === "en") {
+    return rarity;
+  }
+
+  const t = copy[locale].common;
+  if (rarity === "Bronze") return t.bronze;
+  if (rarity === "Silver") return t.silver;
+  if (rarity === "Gold") return t.gold;
+  if (rarity === "Platinum") return t.platinum;
+  return rarity;
+}
+
+export function translateArchetype(archetype: string, locale: Locale) {
+  const t = copy[locale].common;
+  if (archetype === "Floor General") return t.floorGeneral;
+  if (archetype === "Shot Creator") return t.shotCreator;
+  if (archetype === "Pure Scorer") return t.pureScorer;
+  if (archetype === "Two-Way Wing") return t.twoWay;
+  if (archetype === "Athletic Slasher") return t.slasher;
+  if (archetype === "Glass Cleaner") return t.glassCleaner;
+  if (archetype === "Rim Protector") return t.rimProtector;
+  if (archetype === "Playmaking Big") return t.playmakingBig;
+  return archetype;
+}
+
+export function translateChemistryNote(note: string, locale: Locale) {
+  if (locale === "en") {
+    return note;
+  }
+
+  const map: Record<string, string> = {
+    "No lineup configured.": "尚未设置阵容。",
+    "Natural starter positions are filled.": "首发位置配置合理，没有错位问题。",
+    "Starter role overlap hurts spacing and balance.": "首发角色重叠，影响空间和阵容平衡。",
+    "Multiple creators keep the offense flowing.": "多名组织点让进攻运转更加流畅。",
+    "Only one reliable creator in the first unit.": "首发阵容里只有一名稳定组织点。",
+    "Interior anchor stabilizes defense and rebounding.": "内线支柱稳住了防守和篮板。",
+    "No true interior anchor in the lineup.": "当前阵容缺少真正的内线支柱。",
+    "Two-way wings improve matchup flexibility.": "攻防一体的锋线提升了对位弹性。",
+    "Slashing and spacing complement each other well.": "突破与拉开空间形成了很好的互补。",
+    "The starters bring a healthy mix of roles.": "首发角色分工清晰，整体搭配健康。",
+    "Too many starters share the same role profile.": "首发角色同质化过高，功能重叠明显。",
+  };
+
+  return map[note] ?? note;
+}
+
+export function translateMatchSummary(summary: string | null, locale: Locale) {
+  if (!summary || locale === "en") {
+    return summary;
+  }
+
+  let result = summary;
+  result = result.replace(/^([A-Z]{2,4}) controlled the fourth quarter and defended home court\.$/, "$1 在第四节掌控比赛，成功守住主场。");
+  result = result.replace(/^([A-Z]{2,4}) stole a road win with a stronger late-game push\.$/, "$1 在比赛末段完成反扑，客场带走胜利。");
+  return result;
 }

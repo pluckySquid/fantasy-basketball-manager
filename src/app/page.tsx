@@ -7,7 +7,7 @@ import {
 } from "@/components/action-forms";
 import { MetricCard, PlayerShowcaseCard, SectionCard } from "@/components/ui";
 import { getGameSnapshot, getStaffDepartments } from "@/lib/game-state";
-import { buildNav, copy, getLocale, type Locale } from "@/lib/i18n";
+import { buildNav, copy, getLocale, translateChemistryNote, translateMatchSummary, type Locale } from "@/lib/i18n";
 
 function translateNewsItem(item: string, locale: Locale) {
   if (locale === "en") {
@@ -15,7 +15,7 @@ function translateNewsItem(item: string, locale: Locale) {
   }
 
   if (item.startsWith("Round ")) {
-    return item
+    return (translateMatchSummary(item, locale) ?? item)
       .replace(/^Round (\d+): /, "第$1轮：")
       .replace(" at ", " 对阵 ")
       .replace(/Front office buzz: the starting five has found a strong rhythm\./, "球队简报：首发五人已经逐渐形成良好节奏。")
@@ -25,13 +25,13 @@ function translateNewsItem(item: string, locale: Locale) {
     return item.replace(
       "Front office buzz: the starting five has found a strong rhythm.",
       "球队简报：首发五人已经逐渐形成良好节奏。",
-    );
+    ).replace("Natural starter positions are filled.", translateChemistryNote("Natural starter positions are filled.", locale));
   }
   if (item.startsWith("Analysts are questioning")) {
     return item.replace(
       "Analysts are questioning the fit of your first unit.",
       "分析师正在质疑你首发阵容的适配度。",
-    );
+    ).replace("Starter role overlap hurts spacing and balance.", translateChemistryNote("Starter role overlap hurts spacing and balance.", locale));
   }
   if (item.startsWith("Contract watch:")) {
     return item.replace(
@@ -52,7 +52,18 @@ function translateNewsItem(item: string, locale: Locale) {
     return item.replace(/^Award season: (.+) headlines the MVP vote\.$/, "奖项速递：$1 领跑 MVP 评选。");
   }
 
-  return item;
+  return [
+    "Natural starter positions are filled.",
+    "Starter role overlap hurts spacing and balance.",
+    "Multiple creators keep the offense flowing.",
+    "Only one reliable creator in the first unit.",
+    "Interior anchor stabilizes defense and rebounding.",
+    "No true interior anchor in the lineup.",
+    "Two-way wings improve matchup flexibility.",
+    "Slashing and spacing complement each other well.",
+    "The starters bring a healthy mix of roles.",
+    "Too many starters share the same role profile.",
+  ].reduce((result, note) => result.replace(note, translateChemistryNote(note, locale)), item);
 }
 
 export default async function Home() {
@@ -92,7 +103,7 @@ export default async function Home() {
             <MetricCard
               label={t.home.chemistry}
               value={`${snapshot.favoriteChemistry.score}`}
-              caption={snapshot.favoriteChemistry.notes[0] ?? t.common.chemistryFallback}
+              caption={snapshot.favoriteChemistry.notes[0] ? translateChemistryNote(snapshot.favoriteChemistry.notes[0], locale) : t.common.chemistryFallback}
             />
             <MetricCard
               label={t.home.payrollRoom}
@@ -114,7 +125,7 @@ export default async function Home() {
                           ? `第${match.round}轮：${match.awayTeam.abbreviation} ${match.awayScore} 对阵 ${match.homeTeam.abbreviation} ${match.homeScore}`
                           : `Round ${match.round}: ${match.awayTeam.abbreviation} ${match.awayScore} at ${match.homeTeam.abbreviation} ${match.homeScore}`}
                       </p>
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{match.summary}</p>
+                      <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{translateMatchSummary(match.summary, locale)}</p>
                     </div>
                     <div className="mt-3 grid gap-2 text-sm text-slate-300 sm:grid-cols-2">
                       <p>{match.homeTopPerformer}</p>
@@ -244,7 +255,7 @@ export default async function Home() {
             <div className="grid gap-3">
               {snapshot.favoriteChemistry.notes.map((note) => (
                 <div key={note} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
-                  {note}
+                  {translateChemistryNote(note, locale)}
                 </div>
               ))}
             </div>

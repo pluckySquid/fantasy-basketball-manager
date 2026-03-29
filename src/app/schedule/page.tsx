@@ -1,7 +1,7 @@
 import { AppShell } from "@/components/app-shell";
 import { SectionCard } from "@/components/ui";
 import { getGameSnapshot } from "@/lib/game-state";
-import { buildNav, copy, getLocale } from "@/lib/i18n";
+import { buildNav, copy, getLocale, translateMatchSummary } from "@/lib/i18n";
 
 export default async function SchedulePage() {
   const locale = await getLocale();
@@ -45,7 +45,7 @@ export default async function SchedulePage() {
                   {match.played ? (
                     <div className="mt-3 grid gap-4 text-sm text-slate-300">
                       <div className="grid gap-2 md:grid-cols-3">
-                        <p>{match.summary}</p>
+                        <p>{translateMatchSummary(match.summary, locale)}</p>
                         <p>{match.homeTopPerformer}</p>
                         <p>{match.awayTopPerformer}</p>
                       </div>
@@ -60,9 +60,9 @@ export default async function SchedulePage() {
                               <thead className="bg-white/5 uppercase tracking-[0.2em] text-slate-400">
                                 <tr>
                                   <th className="px-3 py-2">{box.label}</th>
-                                  <th className="px-3 py-2">PTS</th>
-                                  <th className="px-3 py-2">REB</th>
-                                  <th className="px-3 py-2">AST</th>
+                                  <th className="px-3 py-2">{locale === "zh" ? "得分" : "PTS"}</th>
+                                  <th className="px-3 py-2">{locale === "zh" ? "篮板" : "REB"}</th>
+                                  <th className="px-3 py-2">{locale === "zh" ? "助攻" : "AST"}</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-white/10 bg-slate-950/60">

@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import Image from "next/image";
 import Link from "next/link";
-import { copy, type Locale } from "@/lib/i18n";
+import { copy, translateArchetype, translateRarity, type Locale } from "@/lib/i18n";
 
 function playerTier(overall: number, locale: Locale) {
   const t = copy[locale].common;
@@ -46,19 +46,6 @@ function rarityStyles(rarity: "Bronze" | "Silver" | "Gold" | "Platinum") {
     default:
       return "from-orange-800/30 via-slate-100/10 to-amber-900/20 border-orange-300/20";
   }
-}
-
-function translateArchetype(archetype: string, locale: Locale) {
-  const t = copy[locale].common;
-  if (archetype === "Floor General") return t.floorGeneral;
-  if (archetype === "Shot Creator") return t.shotCreator;
-  if (archetype === "Pure Scorer") return t.pureScorer;
-  if (archetype === "Two-Way Wing") return t.twoWay;
-  if (archetype === "Athletic Slasher") return t.slasher;
-  if (archetype === "Glass Cleaner") return t.glassCleaner;
-  if (archetype === "Rim Protector") return t.rimProtector;
-  if (archetype === "Playmaking Big") return t.playmakingBig;
-  return archetype;
 }
 
 function hashString(value: string) {
@@ -295,14 +282,14 @@ export function PlayerShowcaseCard({
             {translatedArchetype} | {t.age} {player.age}
           </p>
         </div>
-        <div className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${tier.styles}`}>
+        <div className={`rounded-full border px-3 py-1 text-xs font-semibold tracking-[0.08em] whitespace-nowrap ${tier.styles}`}>
           {tier.label}
         </div>
       </div>
-      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.25em] text-slate-300">
-        <span className="rounded-full border border-white/10 bg-slate-950/45 px-2.5 py-1">{player.rarity}</span>
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs tracking-[0.08em] text-slate-300">
+        <span className="rounded-full border border-white/10 bg-slate-950/45 px-2.5 py-1 whitespace-nowrap">{translateRarity(player.rarity, locale)}</span>
         <span className={`rounded-full border px-2.5 py-1 ${role.styles}`}>{role.label}</span>
-        <span className="rounded-full border border-white/10 bg-slate-950/45 px-2.5 py-1">
+        <span className="rounded-full border border-white/10 bg-slate-950/45 px-2.5 py-1 whitespace-nowrap">
           {player.contractYears}{t.yearsDeal}
         </span>
       </div>

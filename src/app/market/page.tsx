@@ -2,7 +2,7 @@ import { AppShell } from "@/components/app-shell";
 import { OpenPackButton, SignPlayerButton } from "@/components/action-forms";
 import { MetricCard, PlayerShowcaseCard, SectionCard } from "@/components/ui";
 import { getGameSnapshot } from "@/lib/game-state";
-import { buildNav, copy, getLocale } from "@/lib/i18n";
+import { buildNav, copy, getLocale, translateRarity } from "@/lib/i18n";
 
 export default async function MarketPage() {
   const locale = await getLocale();
@@ -102,7 +102,7 @@ export default async function MarketPage() {
                     {snapshot.lastPackReveal.player.firstName} {snapshot.lastPackReveal.player.lastName}
                   </p>
                   <p className="mt-1 text-sm text-slate-300">
-                    {snapshot.lastPackReveal.player.rarity} | {snapshot.lastPackReveal.player.position} | {t.common.ovrShort} {snapshot.lastPackReveal.player.overall}
+                    {translateRarity(snapshot.lastPackReveal.player.rarity, locale)} | {snapshot.lastPackReveal.player.position} | {t.common.ovrShort} {snapshot.lastPackReveal.player.overall}
                   </p>
                 </div>
                 <PlayerShowcaseCard
