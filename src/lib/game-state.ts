@@ -306,23 +306,7 @@ function buildInitialState(): LeagueState {
     };
   });
 
-  const matches = buildSchedule(teams.map((team) => team.id)).flatMap((fixtures, roundIndex) =>
-    fixtures.map((fixture) => ({
-      id: randomUUID(),
-      seasonId,
-      round: roundIndex + 1,
-      homeTeamId: fixture.homeTeamId,
-      awayTeamId: fixture.awayTeamId,
-      played: false,
-      homeScore: null,
-      awayScore: null,
-      homeTopPerformer: null,
-      awayTopPerformer: null,
-      homeBoxScoreJson: null,
-      awayBoxScoreJson: null,
-      summary: null,
-    })),
-  );
+  const matches = createSeasonMatches(seasonId, teams.map((team) => team.id));
 
   return {
     season: { id: seasonId, name: "Pro Hoops Season 1", currentRound: 1, totalRounds: 14, status: "IN_PROGRESS" },
@@ -333,6 +317,7 @@ function buildInitialState(): LeagueState {
     reservePlayers,
     playerStats: createStatSheet([...players, ...marketPlayers, ...reservePlayers]),
     lastPackReveal: null,
+    seasonHistory: [],
     lineups,
     matches,
   };
@@ -386,6 +371,9 @@ function ensureCompleteState(state: LeagueState) {
   }
   if (state.lastPackReveal === undefined) {
     state.lastPackReveal = null;
+  }
+  if (!state.seasonHistory) {
+    state.seasonHistory = [];
   }
   ensurePlayerStatEntries(state, [...state.players, ...state.marketPlayers, ...state.reservePlayers]);
 }
@@ -482,6 +470,165 @@ function standingsSorter(left: TeamWithRoster, right: TeamWithRoster) {
   return right.pointsFor - left.pointsFor;
 }
 
+function createSeasonMatches(seasonId: string, teamIds: string[]) {
+  return buildSchedule(teamIds).flatMap((fixtures, roundIndex) =>
+    fixtures.map((fixture) => ({
+      id: randomUUID(),
+      seasonId,
+      round: roundIndex + 1,
+      homeTeamId: fixture.homeTeamId,
+      awayTeamId: fixture.awayTeamId,
+      played: false,
+      homeScore: null,
+      awayScore: null,
+      homeTopPerformer: null,
+      awayTopPerformer: null,
+      homeBoxScoreJson: null,
+      awayBoxScoreJson: null,
+      summary: null,
+    })),
+  );
+}
+
+function rolePreference(position: Position, archetype: string) {
+  const scoreMap: Record<Position, number> = { PG: 0, SG: 0, SF: 0, PF: 0, C: 0 };
+  scoreMap[position] += 12;
+  if (archetype.includes("Floor General")) {
+    scoreMap.PG += 6;
+    scoreMap.SG += 1;
+  }
+  if (archetype.includes("Pure Scorer") || archetype.includes("Shot Creator")) {
+    scoreMap.SG += 4;
+    scoreMap.SF += 3;
+  }
+  if (archetype.includes("Two-Way") || archetype.includes("Athletic")) {
+    scoreMap.SF += 4;
+    scoreMap.PF += 2;
+  }
+  if (archetype.includes("Rim") || archetype.includes("Glass") || archetype.includes("Big")) {
+    scoreMap.C += 6;
+    scoreMap.PF += 4;
+  }
+  return scoreMap;
+}
+
+function sortPlayersForSlot(players: PlayerState[], slotPosition: Position) {
+  return [...players].sort((left, right) => {
+    const leftScore = left.overall + rolePreference(left.position, left.archetype)[slotPosition];
+    const rightScore = right.overall + rolePreference(right.position, right.archetype)[slotPosition];
+    return rightScore - leftScore;
+  });
+}
+
+function autoBuildLineup(roster: PlayerState[]): LineupSlots {
+  const used = new Set<string>();
+  const starters = {
+    pgId: sortPlayersForSlot(roster.filter((player) => !used.has(player.id)), "PG").find((player) => player.position === "PG")?.id ?? roster[0]?.id ?? "",
+    sgId: "",
+    sfId: "",
+    pfId: "",
+    cId: "",
+    benchOneId: "",
+    benchTwoId: "",
+    benchThreeId: "",
+  } as LineupSlots;
+  used.add(starters.pgId);
+
+  starters.sgId =
+    sortPlayersForSlot(roster.filter((player) => !used.has(player.id)), "SG").find((player) => player.position === "SG")?.id ??
+    roster.find((player) => !used.has(player.id))?.id ??
+    "";
+  used.add(starters.sgId);
+
+  starters.sfId =
+    sortPlayersForSlot(roster.filter((player) => !used.has(player.id)), "SF").find((player) => player.position === "SF")?.id ??
+    roster.find((player) => !used.has(player.id))?.id ??
+    "";
+  used.add(starters.sfId);
+
+  starters.pfId =
+    sortPlayersForSlot(roster.filter((player) => !used.has(player.id)), "PF").find((player) => player.position === "PF")?.id ??
+    roster.find((player) => !used.has(player.id))?.id ??
+    "";
+  used.add(starters.pfId);
+
+  starters.cId =
+    sortPlayersForSlot(roster.filter((player) => !used.has(player.id)), "C").find((player) => player.position === "C")?.id ??
+    roster.find((player) => !used.has(player.id))?.id ??
+    "";
+  used.add(starters.cId);
+
+  const remaining = roster.filter((player) => !used.has(player.id)).sort((left, right) => right.overall - left.overall);
+  starters.benchOneId = remaining[0]?.id ?? roster[0]?.id ?? "";
+  starters.benchTwoId = remaining[1]?.id ?? roster[1]?.id ?? roster[0]?.id ?? "";
+  starters.benchThreeId = remaining[2]?.id ?? roster[2]?.id ?? roster[0]?.id ?? "";
+  return starters;
+}
+
+function seasonHistoryEntryFromSnapshot(snapshot: Awaited<ReturnType<typeof getGameSnapshot>>) {
+  return {
+    seasonId: snapshot.profile.season.id,
+    seasonName: snapshot.profile.season.name,
+    championTeamName: snapshot.seasonAwards.champion?.name ?? "Unknown Champion",
+    favoriteTeamRecord: `${snapshot.favoriteTeam.wins}-${snapshot.favoriteTeam.losses}`,
+    mvpName: snapshot.seasonAwards.mvp
+      ? `${snapshot.seasonAwards.mvp.player.firstName} ${snapshot.seasonAwards.mvp.player.lastName}`
+      : "No MVP",
+  };
+}
+
+function nextSeasonName(currentName: string) {
+  const match = currentName.match(/(\d+)$/);
+  if (!match) {
+    return `${currentName} 2`;
+  }
+  const nextNumber = Number(match[1]) + 1;
+  return currentName.replace(/\d+$/, String(nextNumber));
+}
+
+function refillLeagueRosters(state: LeagueState) {
+  const acquisitionPool = [...state.marketPlayers, ...state.reservePlayers]
+    .map((player) => ({ ...player, teamId: "MARKET", contractYears: Math.max(1, player.contractYears) }))
+    .sort((left, right) => right.overall - left.overall);
+
+  state.marketPlayers = [];
+  state.reservePlayers = [];
+
+  for (const team of state.teams) {
+    const roster = state.players
+      .filter((player) => player.teamId === team.id)
+      .sort((left, right) => right.overall - left.overall);
+
+    while (roster.length < rosterBlueprint.length && acquisitionPool.length > 0) {
+      const positionCounts = roster.reduce(
+        (result, player) => {
+          result[player.position] += 1;
+          return result;
+        },
+        { PG: 0, SG: 0, SF: 0, PF: 0, C: 0 } as Record<Position, number>,
+      );
+      const desiredPosition =
+        rosterBlueprint.find((position) => positionCounts[position] < rosterBlueprint.filter((entry) => entry === position).length) ??
+        rosterBlueprint[Math.min(roster.length, rosterBlueprint.length - 1)];
+      const orderedPool = sortPlayersForSlot(acquisitionPool, desiredPosition);
+      const selected = orderedPool[0] ?? acquisitionPool[0];
+      acquisitionPool.splice(acquisitionPool.findIndex((player) => player.id === selected.id), 1);
+      const signed = {
+        ...selected,
+        teamId: team.id,
+        contractYears: Math.max(1, Math.min(3, selected.contractYears)),
+        morale: Math.max(68, selected.morale),
+      };
+      roster.push(signed);
+      state.players.push(signed);
+    }
+  }
+
+  const leftoverPool = acquisitionPool.sort((left, right) => right.overall - left.overall);
+  state.marketPlayers = leftoverPool.slice(0, 12).map((player) => ({ ...player, teamId: "MARKET" }));
+  state.reservePlayers = leftoverPool.slice(12).map((player) => ({ ...player, teamId: "RESERVE" }));
+}
+
 export async function resetLeague() {
   const state = buildInitialState();
   await writeLeagueState(state);
@@ -501,6 +648,7 @@ export async function ensureLeagueReady() {
       state.reservePlayers === undefined ||
       state.playerStats === undefined ||
       state.lastPackReveal === undefined ||
+      state.seasonHistory === undefined ||
       state.matches[0]?.homeBoxScoreJson === undefined ||
       state.matches[0]?.awayBoxScoreJson === undefined ||
       state.players[0]?.rarity === undefined ||
@@ -632,6 +780,7 @@ export async function getGameSnapshot() {
     mvpLadder,
     seasonAwards,
     expiringContracts,
+    seasonHistory: state.seasonHistory,
   };
 }
 
@@ -730,6 +879,82 @@ export async function simulateNextRound() {
   state.profile.credits += favoriteTeamCredits;
   await writeLeagueState(state);
   return { ok: true as const, message: `Round ${nextRound.round} simulated.` };
+}
+
+export async function startNextSeason() {
+  await ensureLeagueReady();
+  const snapshot = await getGameSnapshot();
+  if (snapshot.profile.season.status !== "COMPLETE") {
+    return { ok: false as const, message: "Finish the current season before rolling over." };
+  }
+
+  const state = await readLeagueState();
+  ensureCompleteState(state);
+  state.seasonHistory.unshift(seasonHistoryEntryFromSnapshot(snapshot));
+
+  const retainedPlayers: PlayerState[] = [];
+  const releasedPlayers: PlayerState[] = [];
+
+  for (const player of state.players) {
+    const nextContractYears = player.contractYears - 1;
+    if (nextContractYears <= 0) {
+      releasedPlayers.push({
+        ...player,
+        teamId: "MARKET",
+        contractYears: 1,
+        morale: Math.max(62, player.morale - 8),
+      });
+      continue;
+    }
+
+    retainedPlayers.push({
+      ...player,
+      contractYears: nextContractYears,
+      morale: Math.max(68, Math.min(99, player.morale + 1)),
+    });
+  }
+
+  state.players = retainedPlayers;
+  state.marketPlayers = [...releasedPlayers, ...state.marketPlayers];
+
+  state.teams = state.teams.map((team) => ({
+    ...team,
+    wins: 0,
+    losses: 0,
+    pointsFor: 0,
+    pointsAgainst: 0,
+    budget: Math.max(24000, team.budget + 300),
+  }));
+
+  refillLeagueRosters(state);
+  state.lineups = state.teams.map((team) => {
+    const roster = state.players
+      .filter((player) => player.teamId === team.id)
+      .sort((left, right) => right.overall - left.overall);
+    return {
+      id: randomUUID(),
+      teamId: team.id,
+      slotsJson: stringifyLineupSlots(autoBuildLineup(roster)),
+    };
+  });
+
+  const seasonId = randomUUID();
+  const seasonName = nextSeasonName(state.season.name);
+  state.season = {
+    id: seasonId,
+    name: seasonName,
+    currentRound: 1,
+    totalRounds: 14,
+    status: "IN_PROGRESS",
+  };
+  state.profile.seasonId = seasonId;
+  state.profile.credits += 600;
+  state.playerStats = createStatSheet([...state.players, ...state.marketPlayers, ...state.reservePlayers]);
+  state.lastPackReveal = null;
+  state.matches = createSeasonMatches(seasonId, state.teams.map((team) => team.id));
+
+  await writeLeagueState(state);
+  return { ok: true as const, message: `${seasonName} is underway.` };
 }
 
 export async function upgradeStaffDepartment(department: "training" | "medical" | "scouting") {

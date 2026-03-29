@@ -115,6 +115,27 @@ export default async function StatsPage() {
         </SectionCard>
       </section>
 
+      <SectionCard title="Franchise Timeline">
+        <div className="grid gap-3">
+          {snapshot.seasonHistory.length === 0 ? (
+            <p className="text-sm text-slate-300">No completed seasons yet. Finish your current campaign to start building history.</p>
+          ) : (
+            snapshot.seasonHistory.map((entry) => (
+              <article key={entry.seasonId} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                  <p className="text-lg font-semibold text-white">{entry.seasonName}</p>
+                  <p className="text-sm text-slate-300">Champion: {entry.championTeamName}</p>
+                </div>
+                <div className="mt-2 grid gap-2 text-sm text-slate-300 md:grid-cols-2">
+                  <p>Your club record: {entry.favoriteTeamRecord}</p>
+                  <p>League MVP: {entry.mvpName}</p>
+                </div>
+              </article>
+            ))
+          )}
+        </div>
+      </SectionCard>
+
       <div className="grid gap-5 xl:grid-cols-2">
         {sections.map((section) => (
           <SectionCard key={section.title} title={section.title}>

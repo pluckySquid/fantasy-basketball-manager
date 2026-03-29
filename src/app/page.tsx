@@ -1,5 +1,5 @@
 import { AppShell } from "@/components/app-shell";
-import { ResetLeagueButton, SimulateRoundButton, StaffUpgradeButton } from "@/components/action-forms";
+import { ResetLeagueButton, SimulateRoundButton, StaffUpgradeButton, StartNextSeasonButton } from "@/components/action-forms";
 import { MetricCard, PlayerShowcaseCard, SectionCard } from "@/components/ui";
 import { getGameSnapshot, getStaffDepartments } from "@/lib/game-state";
 
@@ -71,9 +71,26 @@ export default async function Home() {
           <SectionCard title="League Controls">
             <div className="grid gap-4">
               <SimulateRoundButton disabled={snapshot.profile.season.status === "COMPLETE"} />
+              <StartNextSeasonButton disabled={snapshot.profile.season.status !== "COMPLETE"} />
               <ResetLeagueButton />
             </div>
           </SectionCard>
+
+          {snapshot.profile.season.status === "COMPLETE" ? (
+            <SectionCard title="Season Complete">
+              <div className="grid gap-3">
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
+                  Champion: {snapshot.seasonAwards.champion?.name ?? "TBD"}
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
+                  MVP: {snapshot.seasonAwards.mvp ? `${snapshot.seasonAwards.mvp.player.firstName} ${snapshot.seasonAwards.mvp.player.lastName}` : "TBD"}
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
+                  Renew expiring deals, then roll into the next campaign with a fresh schedule and updated contracts.
+                </div>
+              </div>
+            </SectionCard>
+          ) : null}
 
           <SectionCard title="Club Staff">
             <div className="grid gap-4">
@@ -133,6 +150,22 @@ export default async function Home() {
                   </p>
                 </div>
               ))}
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Franchise History" actionLabel="Full awards" actionHref="/stats">
+            <div className="grid gap-3">
+              {snapshot.seasonHistory.length === 0 ? (
+                <p className="text-sm text-slate-300">Your front office history will appear here once the first season ends.</p>
+              ) : (
+                snapshot.seasonHistory.slice(0, 3).map((entry) => (
+                  <div key={entry.seasonId} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm">
+                    <p className="font-semibold text-white">{entry.seasonName}</p>
+                    <p className="mt-1 text-slate-300">Champion: {entry.championTeamName}</p>
+                    <p className="mt-1 text-slate-300">Your record: {entry.favoriteTeamRecord}</p>
+                  </div>
+                ))
+              )}
             </div>
           </SectionCard>
         </div>

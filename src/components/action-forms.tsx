@@ -9,6 +9,7 @@ import {
   sellPlayerAction,
   signPlayerAction,
   simulateRoundAction,
+  startNextSeasonAction,
   trainPlayerAction,
   upgradeStaffAction,
 } from "@/app/actions";
@@ -43,6 +44,23 @@ export function ResetLeagueButton() {
         className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {pending ? "Resetting..." : "Reset League"}
+      </button>
+      {state.message ? <p className="text-xs text-slate-400">{state.message}</p> : null}
+    </form>
+  );
+}
+
+export function StartNextSeasonButton({ disabled }: { disabled: boolean }) {
+  const [state, action, pending] = useActionState(startNextSeasonAction, initialState);
+
+  return (
+    <form action={action} className="space-y-2">
+      <button
+        type="submit"
+        disabled={disabled || pending}
+        className="w-full rounded-2xl bg-sky-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-200 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-300"
+      >
+        {pending ? "Rolling Over..." : disabled ? "Finish Season First" : "Start Next Season"}
       </button>
       {state.message ? <p className="text-xs text-slate-400">{state.message}</p> : null}
     </form>

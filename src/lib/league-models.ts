@@ -99,6 +99,14 @@ export type PackRevealState = {
   openedAt: string;
 };
 
+export type SeasonHistoryEntry = {
+  seasonId: string;
+  seasonName: string;
+  championTeamName: string;
+  favoriteTeamRecord: string;
+  mvpName: string;
+};
+
 export type LeagueState = {
   season: SeasonState;
   profile: UserProfileState;
@@ -108,6 +116,7 @@ export type LeagueState = {
   reservePlayers: PlayerState[];
   playerStats: PlayerSeasonStatState[];
   lastPackReveal: PackRevealState | null;
+  seasonHistory: SeasonHistoryEntry[];
   lineups: LineupState[];
   matches: MatchState[];
 };

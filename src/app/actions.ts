@@ -9,6 +9,7 @@ import {
   sellRosterPlayer,
   signMarketPlayer,
   simulateNextRound,
+  startNextSeason,
   trainPlayer,
   upgradeStaffDepartment,
 } from "@/lib/game-state";
@@ -33,6 +34,13 @@ export async function saveLineupAction(_: { ok: boolean; message: string }, form
 export async function simulateRoundAction(previousState: { ok: boolean; message: string }) {
   void previousState;
   const result = await simulateNextRound();
+  refreshLeaguePaths();
+  return result;
+}
+
+export async function startNextSeasonAction(previousState: { ok: boolean; message: string }) {
+  void previousState;
+  const result = await startNextSeason();
   refreshLeaguePaths();
   return result;
 }
