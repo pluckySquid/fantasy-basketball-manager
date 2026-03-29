@@ -1,9 +1,0 @@
-{"timestamp":"00:00:00.428","source":"Server","level":"LOG","message":""}
-{"timestamp":"00:00:00.428","source":"Server","level":"LOG","message":"  We detected TypeScript in your project and reconfigured your tsconfig.json file for you."}
-{"timestamp":"00:00:00.428","source":"Server","level":"LOG","message":"  The following suggested values were added to your tsconfig.json. These values can be changed to fit your project's needs:\n"}
-{"timestamp":"00:00:00.428","source":"Server","level":"LOG","message":"  \t- include was updated to add '.build/types/**/*.ts'"}
-{"timestamp":"00:00:00.428","source":"Server","level":"LOG","message":"  \t- include was updated to add '.build/dev/types/**/*.ts'"}
-{"timestamp":"00:00:00.429","source":"Server","level":"LOG","message":""}
-{"timestamp":"00:00:00.528","source":"Server","level":"LOG","message":""}
-{"timestamp":"00:00:37.741","source":"Server","level":"WARN","message":"⚠ Blocked cross-origin request to Next.js dev resource /_next/webpack-hmr from \"10.0.0.78\".\nCross-origin access to Next.js dev resources is blocked by default for safety.\n\nTo allow this host in development, add it to \"allowedDevOrigins\" in next.config.js and restart the dev server:\n\n// next.config.js\nmodule.exports = {\n  allowedDevOrigins: ['10.0.0.78'],\n}\n\nRead more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins"}
-{"timestamp":"00:00:37.809","source":"Server","level":"WARN","message":"⚠ Blocked cross-origin request to Next.js dev resource /__nextjs_font/geist-latin.woff2 from \"10.0.0.78\".\nCross-origin access to Next.js dev resources is blocked by default for safety.\n\nTo allow this host in development, add it to \"allowedDevOrigins\" in next.config.js and restart the dev server:\n\n// next.config.js\nmodule.exports = {\n  allowedDevOrigins: ['10.0.0.78'],\n}\n\nRead more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins"}
