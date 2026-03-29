@@ -29,6 +29,7 @@ export type PlayerState = {
   defense: number;
   stamina: number;
   salary: number;
+  contractYears: number;
   morale: number;
   rarity: "Bronze" | "Silver" | "Gold" | "Platinum";
   archetype: string;

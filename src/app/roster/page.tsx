@@ -15,7 +15,7 @@ export default async function RosterPage() {
       <section className="mb-5 grid gap-4 md:grid-cols-3">
         <MetricCard
           label="Payroll"
-          value={`$${snapshot.favoriteTeam.players.reduce((sum, player) => sum + player.salary, 0).toLocaleString()}`}
+          value={`$${snapshot.favoritePayroll.toLocaleString()}`}
           caption="Total salary commitment across the active roster."
         />
         <MetricCard
@@ -27,6 +27,16 @@ export default async function RosterPage() {
           label="Top Player"
           value={`${snapshot.favoriteTeam.players[0].firstName} ${snapshot.favoriteTeam.players[0].lastName}`}
           caption="Current leader by overall rating."
+        />
+        <MetricCard
+          label="Cap Room"
+          value={`${snapshot.favoriteCapRoom >= 0 ? "+" : ""}$${snapshot.favoriteCapRoom.toLocaleString()}`}
+          caption={`Budget ceiling: $${snapshot.favoriteTeam.budget.toLocaleString()}`}
+        />
+        <MetricCard
+          label="Chemistry"
+          value={String(snapshot.favoriteChemistry.score)}
+          caption={snapshot.favoriteChemistry.notes[0] ?? "Balanced roles improve team strength."}
         />
       </section>
 
@@ -56,6 +66,7 @@ export default async function RosterPage() {
                 <th className="px-4 py-3">Playmaking</th>
                 <th className="px-4 py-3">Rebounding</th>
                 <th className="px-4 py-3">Defense</th>
+                <th className="px-4 py-3">Contract</th>
                 <th className="px-4 py-3">Salary</th>
               </tr>
             </thead>
@@ -73,6 +84,7 @@ export default async function RosterPage() {
                   <td className="px-4 py-4">{player.playmaking}</td>
                   <td className="px-4 py-4">{player.rebounding}</td>
                   <td className="px-4 py-4">{player.defense}</td>
+                  <td className="px-4 py-4">{player.contractYears}Y</td>
                   <td className="px-4 py-4">${player.salary.toLocaleString()}</td>
                 </tr>
               ))}

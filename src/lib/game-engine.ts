@@ -6,6 +6,75 @@ type TeamWithRoster = TeamState & {
   lineup: LineupState | null;
 };
 
+export function getPayroll(team: TeamWithRoster) {
+  return team.players.reduce((sum, player) => sum + player.salary, 0);
+}
+
+export function analyzeLineupChemistry(team: TeamWithRoster) {
+  if (!team.lineup) {
+    return { score: 0, notes: ["No lineup configured."] };
+  }
+
+  const lineup = parseLineupSlots(team.lineup.slotsJson);
+  const starters = Object.keys(starterPositionBySlot)
+    .map((slot) => team.players.find((player) => player.id === lineup[slot as keyof typeof starterPositionBySlot]))
+    .filter((player): player is PlayerState => Boolean(player));
+
+  const notes: string[] = [];
+  let score = 58;
+  const positions = new Set(starters.map((player) => player.position));
+  const twoWayCount = starters.filter((player) => player.defense >= 84 && player.scoring >= 82).length;
+  const creators = starters.filter((player) => player.playmaking >= 85 || player.position === "PG").length;
+  const rimPresence = starters.some((player) => player.position === "C" && (player.rebounding >= 86 || player.defense >= 86));
+  const slashers = starters.filter((player) => player.archetype === "Athletic Slasher").length;
+  const spacers = starters.filter((player) => player.scoring >= 88 && player.position !== "C").length;
+  const archetypeVariety = new Set(starters.map((player) => player.archetype)).size;
+
+  if (positions.size === 5) {
+    score += 8;
+    notes.push("Natural starter positions are filled.");
+  } else {
+    score -= 8;
+    notes.push("Starter role overlap hurts spacing and balance.");
+  }
+
+  if (creators >= 2) {
+    score += 7;
+    notes.push("Multiple creators keep the offense flowing.");
+  } else {
+    score -= 5;
+    notes.push("Only one reliable creator in the first unit.");
+  }
+
+  if (rimPresence) {
+    score += 7;
+    notes.push("Interior anchor stabilizes defense and rebounding.");
+  } else {
+    score -= 6;
+    notes.push("No true interior anchor in the lineup.");
+  }
+
+  if (twoWayCount >= 2) {
+    score += 6;
+    notes.push("Two-way wings improve matchup flexibility.");
+  }
+
+  if (slashers > 0 && spacers > 1) {
+    score += 5;
+    notes.push("Slashing and spacing complement each other well.");
+  }
+
+  if (archetypeVariety >= 4) {
+    score += 5;
+    notes.push("The starters bring a healthy mix of roles.");
+  } else {
+    score -= 4;
+    notes.push("Too many starters share the same role profile.");
+  }
+
+  return { score: Math.max(40, Math.min(99, score)), notes: notes.slice(0, 3) };
+}
+
 export function validateLineup(team: TeamWithRoster, lineup: LineupSlots) {
   const rosterIds = new Set(team.players.map((player) => player.id));
   const selectedIds = Object.values(lineup);
@@ -59,8 +128,21 @@ export function teamStrength(team: TeamWithRoster) {
   const moraleBonus =
     team.players.reduce((sum, player) => sum + player.morale, 0) / Math.max(team.players.length, 1);
   const staffBonus = team.trainingLevel * 4 + team.medicalLevel * 3 + team.scoutingLevel * 2;
+  const chemistry = analyzeLineupChemistry(team).score;
+  const payrollPressure = Math.max(0, getPayroll(team) - team.budget);
+  const contractStability =
+    team.players.reduce((sum, player) => sum + Math.min(player.contractYears, 3), 0) / Math.max(team.players.length, 1);
 
-  return starterImpact + benchImpact + staminaBonus * 0.16 + moraleBonus * 0.08 + staffBonus;
+  return (
+    starterImpact +
+    benchImpact +
+    staminaBonus * 0.16 +
+    moraleBonus * 0.08 +
+    staffBonus +
+    chemistry * 0.9 +
+    contractStability * 3 -
+    payrollPressure * 0.015
+  );
 }
 
 function randomSwing(size: number) {

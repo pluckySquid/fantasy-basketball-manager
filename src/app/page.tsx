@@ -23,6 +23,16 @@ export default async function Home() {
             <MetricCard label="Record" value={record} caption="League place updates after each simulated round." />
             <MetricCard label="Team Strength" value={String(snapshot.favoriteTeamStrength)} caption="Weighted from your active lineup, stamina, and morale." />
             <MetricCard label="Club Credits" value={String(snapshot.profile.credits)} caption={`${snapshot.profile.season.name} | ${snapshot.profile.managerName} | ${nextRoundLabel}`} />
+            <MetricCard
+              label="Chemistry"
+              value={`${snapshot.favoriteChemistry.score}`}
+              caption={snapshot.favoriteChemistry.notes[0] ?? "Build a balanced starting five."}
+            />
+            <MetricCard
+              label="Payroll Room"
+              value={`${snapshot.favoriteCapRoom >= 0 ? "+" : ""}$${snapshot.favoriteCapRoom.toLocaleString()}`}
+              caption={`Cap line: $${snapshot.favoriteTeam.budget.toLocaleString()} | Payroll: $${snapshot.favoritePayroll.toLocaleString()}`}
+            />
           </section>
 
           <SectionCard title="Recent Results" actionLabel="Full schedule" actionHref="/schedule">
@@ -84,6 +94,16 @@ export default async function Home() {
                     />
                   </div>
                 </article>
+              ))}
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Chemistry Notes" actionLabel="Tune lineup" actionHref="/lineup">
+            <div className="grid gap-3">
+              {snapshot.favoriteChemistry.notes.map((note) => (
+                <div key={note} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
+                  {note}
+                </div>
               ))}
             </div>
           </SectionCard>

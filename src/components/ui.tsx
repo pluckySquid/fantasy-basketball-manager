@@ -16,6 +16,22 @@ function playerTier(overall: number) {
   return { label: "Rotation", styles: "bg-slate-300/10 text-slate-100 border-white/10" };
 }
 
+function roleBadge(archetype: string) {
+  if (archetype.includes("Floor General")) {
+    return { label: "Creator", styles: "border-sky-300/30 bg-sky-300/12 text-sky-100" };
+  }
+  if (archetype.includes("Rim") || archetype.includes("Glass") || archetype.includes("Big")) {
+    return { label: "Anchor", styles: "border-emerald-300/30 bg-emerald-300/12 text-emerald-100" };
+  }
+  if (archetype.includes("Two-Way")) {
+    return { label: "Two-Way", styles: "border-violet-300/30 bg-violet-300/12 text-violet-100" };
+  }
+  if (archetype.includes("Athletic")) {
+    return { label: "Slasher", styles: "border-rose-300/30 bg-rose-300/12 text-rose-100" };
+  }
+  return { label: "Bucket", styles: "border-amber-300/30 bg-amber-300/12 text-amber-100" };
+}
+
 function rarityStyles(rarity: "Bronze" | "Silver" | "Gold" | "Platinum") {
   switch (rarity) {
     case "Platinum":
@@ -92,6 +108,19 @@ function portraitPalette(seed: string) {
 
 function portraitSlug(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
+function cardFrameStyles(rarity: "Bronze" | "Silver" | "Gold" | "Platinum") {
+  switch (rarity) {
+    case "Platinum":
+      return "before:absolute before:inset-0 before:rounded-[28px] before:border before:border-cyan-200/30 before:shadow-[0_0_28px_rgba(34,211,238,0.18)]";
+    case "Gold":
+      return "before:absolute before:inset-0 before:rounded-[28px] before:border before:border-amber-200/30 before:shadow-[0_0_24px_rgba(251,191,36,0.16)]";
+    case "Silver":
+      return "before:absolute before:inset-0 before:rounded-[28px] before:border before:border-slate-200/20 before:shadow-[0_0_18px_rgba(226,232,240,0.12)]";
+    default:
+      return "before:absolute before:inset-0 before:rounded-[28px] before:border before:border-orange-300/20";
+  }
 }
 
 export function PlayerPortrait({
@@ -244,6 +273,7 @@ export function PlayerShowcaseCard({
     defense: number;
     stamina: number;
     salary: number;
+    contractYears: number;
     rarity: "Bronze" | "Silver" | "Gold" | "Platinum";
     archetype: string;
     potential: number;
@@ -252,20 +282,20 @@ export function PlayerShowcaseCard({
 }) {
   const tier = playerTier(player.overall);
   const archetype = playerArchetype(player);
+  const role = roleBadge(player.archetype);
   const fullName = `${player.firstName} ${player.lastName}`;
 
   return (
     <Link
       href={href}
-      className={`group rounded-[28px] border bg-[linear-gradient(160deg,var(--tw-gradient-stops))] p-5 shadow-lg shadow-slate-950/20 transition hover:-translate-y-1 hover:border-amber-300/40 ${rarityStyles(player.rarity)}`}
+      className={`group relative overflow-hidden rounded-[28px] border bg-[linear-gradient(160deg,var(--tw-gradient-stops))] p-5 shadow-lg shadow-slate-950/20 transition hover:-translate-y-1 hover:border-amber-300/40 ${rarityStyles(player.rarity)} ${cardFrameStyles(player.rarity)}`}
     >
+      <div className="pointer-events-none absolute inset-x-6 top-3 h-20 rounded-full bg-white/8 blur-3xl" />
       <PlayerPortrait name={fullName} rarity={player.rarity} className="h-48 w-full" />
-      <div className="flex items-start justify-between gap-3">
+      <div className="mt-4 flex items-start justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-[0.25em] text-slate-400">{player.position}</p>
-          <h3 className="mt-2 text-xl font-semibold text-white">
-            {fullName}
-          </h3>
+          <h3 className="mt-2 text-xl font-semibold text-white">{fullName}</h3>
           <p className="mt-1 text-sm text-slate-300">
             {archetype} | Age {player.age}
           </p>
@@ -274,11 +304,14 @@ export function PlayerShowcaseCard({
           {tier.label}
         </div>
       </div>
-      <div className="mt-3 flex items-center justify-between text-xs uppercase tracking-[0.25em] text-slate-300">
-        <span>{player.rarity}</span>
-        <span>{player.archetype}</span>
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.25em] text-slate-300">
+        <span className="rounded-full border border-white/10 bg-slate-950/45 px-2.5 py-1">{player.rarity}</span>
+        <span className={`rounded-full border px-2.5 py-1 ${role.styles}`}>{role.label}</span>
+        <span className="rounded-full border border-white/10 bg-slate-950/45 px-2.5 py-1">
+          {player.contractYears}Y Deal
+        </span>
       </div>
-      <div className="mt-5 grid grid-cols-2 gap-3">
+      <div className="mt-5 grid grid-cols-3 gap-3">
         <div className="rounded-2xl bg-slate-950/70 p-3">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Overall</p>
           <p className="mt-1 text-3xl font-semibold text-white">{player.overall}</p>
@@ -286,6 +319,10 @@ export function PlayerShowcaseCard({
         <div className="rounded-2xl bg-slate-950/70 p-3">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Salary</p>
           <p className="mt-2 text-lg font-semibold text-white">${player.salary.toLocaleString()}</p>
+        </div>
+        <div className="rounded-2xl bg-slate-950/70 p-3">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Fit</p>
+          <p className="mt-2 text-lg font-semibold text-white">{role.label}</p>
         </div>
       </div>
       <div className="mt-4 grid gap-3">

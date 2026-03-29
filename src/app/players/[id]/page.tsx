@@ -44,6 +44,7 @@ export default async function PlayerDetailPage({
               <p>Age: {player.age}</p>
               <p>Overall: {player.overall}</p>
               <p>Salary: ${player.salary.toLocaleString()}</p>
+              <p>Contract: {player.contractYears} years</p>
               <p>Morale: {player.morale}</p>
               <p>Team: {player.team.abbreviation}</p>
               <p>Potential: {player.potential}</p>

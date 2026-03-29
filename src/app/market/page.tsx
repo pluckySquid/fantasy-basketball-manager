@@ -32,6 +32,11 @@ export default async function MarketPage() {
           value={String(snapshot.reserveCount)}
           caption="Pack inventory still waiting in the hidden reserve pool."
         />
+        <MetricCard
+          label="Cap Room"
+          value={`${snapshot.favoriteCapRoom >= 0 ? "+" : ""}$${snapshot.favoriteCapRoom.toLocaleString()}`}
+          caption={`You cannot sign players if salary pushes payroll over $${snapshot.favoriteTeam.budget.toLocaleString()}.`}
+        />
       </section>
 
       <SectionCard title="Card Packs">

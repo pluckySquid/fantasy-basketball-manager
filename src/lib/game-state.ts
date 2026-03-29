@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { simulateMatch, teamStrength, validateLineup } from "./game-engine";
+import { analyzeLineupChemistry, getPayroll, simulateMatch, teamStrength, validateLineup } from "./game-engine";
 import {
   lineupOrder,
   parseLineupSlots,
@@ -176,6 +176,8 @@ function createPlayerFromSeed(seed: RealPlayerSeed, teamId: string, index: numbe
     "Playmaking Big": { scoring: 1, playmaking: 5, rebounding: 5, defense: 1, stamina: 1 },
   } as const;
   const template = templates[seed.archetype];
+  const contractYears =
+    seed.age <= 25 ? 4 : seed.age <= 29 ? 3 : seed.age <= 33 ? 2 : 1;
 
   return {
     id: randomUUID(),
@@ -191,6 +193,7 @@ function createPlayerFromSeed(seed: RealPlayerSeed, teamId: string, index: numbe
     defense: clampRating(seed.overall + template.defense - (index % 2)),
     stamina: clampRating(seed.overall + template.stamina + 1),
     salary: 800 + seed.overall * 24,
+    contractYears,
     morale: clampRating(72 + (index % 10)),
     rarity: rarityFromOverall(seed.overall),
     archetype: seed.archetype,
@@ -260,7 +263,7 @@ function buildInitialState(): LeagueState {
     city,
     name: `${city} ${nickname}`,
     abbreviation,
-    budget: 18000,
+    budget: 26000,
     trainingLevel: 1,
     medicalLevel: 1,
     scoutingLevel: 1,
@@ -502,7 +505,8 @@ export async function ensureLeagueReady() {
       state.matches[0]?.awayBoxScoreJson === undefined ||
       state.players[0]?.rarity === undefined ||
       state.players[0]?.archetype === undefined ||
-      state.players[0]?.potential === undefined
+      state.players[0]?.potential === undefined ||
+      state.players[0]?.contractYears === undefined
     ) {
       await resetLeague();
       return;
@@ -521,6 +525,8 @@ export async function getGameSnapshot() {
   const playerLookup = buildPlayerLookup(state);
   const teamLookup = buildTeamLookup(state);
   const favoriteTeam = enrichTeam(state, state.profile.favoriteTeamId);
+  const favoriteChemistry = analyzeLineupChemistry(favoriteTeam);
+  const favoritePayroll = getPayroll(favoriteTeam);
   const teams = state.teams.map((team) => enrichTeam(state, team.id)).sort(standingsSorter);
   const matches = state.matches
     .map((match) => ({
@@ -595,6 +601,9 @@ export async function getGameSnapshot() {
     favoriteTeam,
     favoriteLineup: parseLineupSlots(favoriteTeam.lineup!.slotsJson),
     favoriteTeamStrength: Math.round(teamStrength(favoriteTeam)),
+    favoriteChemistry,
+    favoritePayroll,
+    favoriteCapRoom: favoriteTeam.budget - favoritePayroll,
     teams,
     matches,
     pendingRound: matches.find((match) => !match.played)?.round ?? state.season.totalRounds,
@@ -801,6 +810,15 @@ export async function signMarketPlayer(playerId: string) {
   }
 
   const price = player.salary + team.scoutingLevel * 80;
+  const currentPayroll = state.players
+    .filter((entry) => entry.teamId === state.profile.favoriteTeamId)
+    .reduce((sum, entry) => sum + entry.salary, 0);
+  if (currentPayroll + player.salary > team.budget) {
+    return {
+      ok: false as const,
+      message: `Not enough cap room. You need ${currentPayroll + player.salary - team.budget} more payroll room.`,
+    };
+  }
   if (state.profile.credits < price) {
     return { ok: false as const, message: `Not enough credits. Signing costs ${price}.` };
   }
