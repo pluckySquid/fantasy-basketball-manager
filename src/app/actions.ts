@@ -14,6 +14,7 @@ import {
   trainPlayer,
   upgradeStaffDepartment,
 } from "@/lib/game-state";
+import { isLocale, setLocaleCookie } from "@/lib/i18n";
 
 function refreshLeaguePaths() {
   revalidatePath("/");
@@ -141,4 +142,17 @@ export async function executeTradeAction(
   const result = await executeTrade(givePlayerId, receivePlayerId);
   refreshLeaguePaths();
   return result;
+}
+
+export async function setLanguageAction(
+  _: { ok: boolean; message: string },
+  formData: FormData,
+) {
+  const locale = String(formData.get("locale") ?? "");
+  if (!isLocale(locale)) {
+    return { ok: false as const, message: "Unknown language." };
+  }
+  await setLocaleCookie(locale);
+  refreshLeaguePaths();
+  return { ok: true as const, message: "" };
 }

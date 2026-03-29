@@ -3,44 +3,51 @@ import { AppShell } from "@/components/app-shell";
 import { ExtendContractButton, SellPlayerButton } from "@/components/action-forms";
 import { MetricCard, PlayerShowcaseCard, SectionCard } from "@/components/ui";
 import { getGameSnapshot } from "@/lib/game-state";
+import { buildNav, copy, getLocale } from "@/lib/i18n";
 
 export default async function RosterPage() {
+  const locale = await getLocale();
+  const t = copy[locale];
   const snapshot = await getGameSnapshot();
 
   return (
     <AppShell
-      title="Team Roster"
-      subtitle="Scout every contract on your roster, compare role fit, and jump into player cards for more detail."
+      title={t.roster.title}
+      subtitle={t.roster.subtitle}
+      locale={locale}
+      nav={buildNav(locale)}
+      languageLabels={t.language}
+      appName={t.appName}
     >
       <section className="mb-5 grid gap-4 md:grid-cols-3">
         <MetricCard
-          label="Payroll"
+          label={t.roster.payroll}
           value={`$${snapshot.favoritePayroll.toLocaleString()}`}
           caption="Total salary commitment across the active roster."
         />
         <MetricCard
-          label="Average OVR"
+          label={t.roster.averageOvr}
           value={String(Math.round(snapshot.favoriteTeam.players.reduce((sum, player) => sum + player.overall, 0) / snapshot.favoriteTeam.players.length))}
           caption="Quick read on roster quality."
         />
         <MetricCard
-          label="Top Player"
+          label={t.roster.topPlayer}
           value={`${snapshot.favoriteTeam.players[0].firstName} ${snapshot.favoriteTeam.players[0].lastName}`}
           caption="Current leader by overall rating."
         />
         <MetricCard
-          label="Cap Room"
+          label={t.roster.capRoom}
           value={`${snapshot.favoriteCapRoom >= 0 ? "+" : ""}$${snapshot.favoriteCapRoom.toLocaleString()}`}
           caption={`Budget ceiling: $${snapshot.favoriteTeam.budget.toLocaleString()}`}
         />
         <MetricCard
-          label="Chemistry"
+          label={t.roster.chemistry}
           value={String(snapshot.favoriteChemistry.score)}
           caption={snapshot.favoriteChemistry.notes[0] ?? "Balanced roles improve team strength."}
         />
       </section>
 
-      <SectionCard title={`${snapshot.favoriteTeam.name} Cards`}>
+      <SectionCard title={`${snapshot.favoriteTeam.name} ${t.roster.cards}`}>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {snapshot.favoriteTeam.players.map((player) => (
             <div key={player.id} className="grid gap-3">
@@ -54,10 +61,10 @@ export default async function RosterPage() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Contract Desk">
+      <SectionCard title={t.roster.contractDesk}>
         <div className="grid gap-4 lg:grid-cols-2">
           {snapshot.expiringContracts.length === 0 ? (
-            <p className="text-sm text-slate-300">No urgent contract decisions right now. Your key pieces are locked in beyond this season.</p>
+            <p className="text-sm text-slate-300">{t.roster.contractEmpty}</p>
           ) : (
             snapshot.expiringContracts.map((player) => (
               <article key={`contract-${player.id}`} className="rounded-[24px] border border-white/10 bg-white/5 p-5">
@@ -71,7 +78,7 @@ export default async function RosterPage() {
                     </p>
                   </div>
                   <div className="rounded-full border border-amber-300/25 bg-amber-300/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-100">
-                    Action Needed
+                    {t.roster.actionNeeded}
                   </div>
                 </div>
                 <div className="mt-4">
@@ -83,7 +90,7 @@ export default async function RosterPage() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Table View">
+      <SectionCard title={t.roster.tableView}>
         <div className="overflow-hidden rounded-[24px] border border-white/10">
           <table className="min-w-full divide-y divide-white/10 text-left text-sm">
             <thead className="bg-white/5 text-xs uppercase tracking-[0.2em] text-slate-400">
@@ -95,8 +102,8 @@ export default async function RosterPage() {
                 <th className="px-4 py-3">Playmaking</th>
                 <th className="px-4 py-3">Rebounding</th>
                 <th className="px-4 py-3">Defense</th>
-                <th className="px-4 py-3">Contract</th>
-                <th className="px-4 py-3">Salary</th>
+                <th className="px-4 py-3">{t.roster.contract}</th>
+                <th className="px-4 py-3">{t.roster.salary}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10 bg-slate-950/60 text-slate-100">

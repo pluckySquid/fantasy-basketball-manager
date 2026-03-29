@@ -1,8 +1,11 @@
 import { AppShell } from "@/components/app-shell";
 import { SectionCard } from "@/components/ui";
 import { getGameSnapshot } from "@/lib/game-state";
+import { buildNav, copy, getLocale } from "@/lib/i18n";
 
 export default async function SchedulePage() {
+  const locale = await getLocale();
+  const t = copy[locale];
   const snapshot = await getGameSnapshot();
   const grouped = snapshot.matches.reduce(
     (result, match) => {
@@ -16,8 +19,12 @@ export default async function SchedulePage() {
 
   return (
     <AppShell
-      title="Schedule and Results"
-      subtitle="Track every round, spot the fixtures still ahead, and review simulated results with top-performer summaries."
+      title={t.schedule.title}
+      subtitle={t.schedule.subtitle}
+      locale={locale}
+      nav={buildNav(locale)}
+      languageLabels={t.language}
+      appName={t.appName}
     >
       <div className="grid gap-5">
         {Object.entries(grouped).map(([round, matches]) => (
@@ -32,7 +39,7 @@ export default async function SchedulePage() {
                       {match.played ? ` ${match.homeScore}` : ""}
                     </p>
                     <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                      {match.played ? "Final" : "Upcoming"}
+                      {match.played ? t.schedule.final : t.schedule.upcoming}
                     </p>
                   </div>
                   {match.played ? (

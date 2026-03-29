@@ -1,8 +1,11 @@
 import { AppShell } from "@/components/app-shell";
 import { MetricCard, SectionCard } from "@/components/ui";
 import { getGameSnapshot } from "@/lib/game-state";
+import { buildNav, copy, getLocale } from "@/lib/i18n";
 
 export default async function StandingsPage() {
+  const locale = await getLocale();
+  const t = copy[locale];
   const snapshot = await getGameSnapshot();
   const standings = [...snapshot.teams];
   const scoringLeader = snapshot.scoringLeaders[0];
@@ -11,29 +14,33 @@ export default async function StandingsPage() {
 
   return (
     <AppShell
-      title="League Standings"
-      subtitle="Wins decide placement first, then point differential, then total points scored."
+      title={t.standings.title}
+      subtitle={t.standings.subtitle}
+      locale={locale}
+      nav={buildNav(locale)}
+      languageLabels={t.language}
+      appName={t.appName}
     >
       <section className="mb-5 grid gap-4 lg:grid-cols-3">
         <MetricCard
-          label="Scoring Leader"
+          label={t.standings.scoringLeader}
           value={scoringLeader ? `${scoringLeader.player.firstName} ${scoringLeader.player.lastName}` : "No games yet"}
           caption={scoringLeader ? `${scoringLeader.ppg.toFixed(1)} PPG | ${scoringLeader.team.abbreviation}` : "Simulate a round to unlock leaders."}
         />
         <MetricCard
-          label="Assist Leader"
+          label={t.standings.assistLeader}
           value={assistLeader ? `${assistLeader.player.firstName} ${assistLeader.player.lastName}` : "No games yet"}
           caption={assistLeader ? `${assistLeader.apg.toFixed(1)} APG | ${assistLeader.team.abbreviation}` : "Ball movement crowns this category."}
         />
         <MetricCard
-          label="Rebound Leader"
+          label={t.standings.reboundLeader}
           value={reboundLeader ? `${reboundLeader.player.firstName} ${reboundLeader.player.lastName}` : "No games yet"}
           caption={reboundLeader ? `${reboundLeader.rpg.toFixed(1)} RPG | ${reboundLeader.team.abbreviation}` : "Interior play starts here."}
         />
       </section>
 
       <section className="mb-5 grid gap-5 xl:grid-cols-[1.5fr_1fr]">
-        <SectionCard title="MVP Ladder">
+        <SectionCard title={t.standings.mvpLadder}>
           <div className="grid gap-3">
             {snapshot.mvpLadder.length === 0 ? (
               <p className="text-sm text-slate-300">No MVP race yet. Simulate the opening round to seed the leaderboard.</p>
@@ -59,7 +66,7 @@ export default async function StandingsPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Category Leaders">
+        <SectionCard title={t.standings.categoryLeaders}>
           <div className="grid gap-4">
             {[
               { label: "Points", rows: snapshot.scoringLeaders, stat: "ppg" as const, suffix: "PPG" },
@@ -86,7 +93,7 @@ export default async function StandingsPage() {
         </SectionCard>
       </section>
 
-      <SectionCard title={`${snapshot.profile.season.name} Table`}>
+      <SectionCard title={`${snapshot.profile.season.name} ${t.standings.table}`}>
         <div className="overflow-hidden rounded-[24px] border border-white/10">
           <table className="min-w-full divide-y divide-white/10 text-left text-sm">
             <thead className="bg-white/5 text-xs uppercase tracking-[0.2em] text-slate-400">

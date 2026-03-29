@@ -8,6 +8,7 @@ import {
   resetLeagueAction,
   saveLineupAction,
   sellPlayerAction,
+  setLanguageAction,
   signPlayerAction,
   simulateRoundAction,
   startNextSeasonAction,
@@ -64,6 +65,45 @@ export function StartNextSeasonButton({ disabled }: { disabled: boolean }) {
         {pending ? "Rolling Over..." : disabled ? "Finish Season First" : "Start Next Season"}
       </button>
       {state.message ? <p className="text-xs text-slate-400">{state.message}</p> : null}
+    </form>
+  );
+}
+
+export function LanguageSwitcher({
+  currentLocale,
+  labels,
+}: {
+  currentLocale: "en" | "zh";
+  labels: {
+    label: string;
+    en: string;
+    zh: string;
+  };
+}) {
+  const [, action, pending] = useActionState(setLanguageAction, initialState);
+
+  return (
+    <form action={action} className="flex items-center gap-2">
+      <span className="text-xs uppercase tracking-[0.2em] text-slate-400">{labels.label}</span>
+      {[
+        { locale: "en", label: labels.en },
+        { locale: "zh", label: labels.zh },
+      ].map((option) => (
+        <button
+          key={option.locale}
+          type="submit"
+          name="locale"
+          value={option.locale}
+          disabled={pending || currentLocale === option.locale}
+          className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+            currentLocale === option.locale
+              ? "border-amber-300/40 bg-amber-300/12 text-amber-100"
+              : "border-white/10 bg-white/5 text-slate-200 hover:bg-white/10"
+          }`}
+        >
+          {option.label}
+        </button>
+      ))}
     </form>
   );
 }

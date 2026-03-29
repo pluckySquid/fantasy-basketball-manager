@@ -2,8 +2,11 @@ import { AppShell } from "@/components/app-shell";
 import { ResetLeagueButton, SimulateRoundButton, StaffUpgradeButton, StartNextSeasonButton } from "@/components/action-forms";
 import { MetricCard, PlayerShowcaseCard, SectionCard } from "@/components/ui";
 import { getGameSnapshot, getStaffDepartments } from "@/lib/game-state";
+import { buildNav, copy, getLocale } from "@/lib/i18n";
 
 export default async function Home() {
+  const locale = await getLocale();
+  const t = copy[locale];
   const snapshot = await getGameSnapshot();
   const record = `${snapshot.favoriteTeam.wins}-${snapshot.favoriteTeam.losses}`;
   const nextRoundLabel =
@@ -14,31 +17,35 @@ export default async function Home() {
 
   return (
     <AppShell
-      title={`${snapshot.favoriteTeam.city} Front Office`}
-      subtitle="Run a fictional basketball club through a full season: manage the roster, set the lineup, simulate rounds, and track the table."
+      title={`${snapshot.favoriteTeam.city} ${t.home.titleSuffix}`}
+      subtitle={t.home.subtitle}
+      locale={locale}
+      nav={buildNav(locale)}
+      languageLabels={t.language}
+      appName={t.appName}
     >
       <div className="grid gap-5 xl:grid-cols-[1.5fr_1fr]">
         <div className="grid gap-5">
           <section className="grid gap-4 md:grid-cols-3">
-            <MetricCard label="Record" value={record} caption="League place updates after each simulated round." />
-            <MetricCard label="Team Strength" value={String(snapshot.favoriteTeamStrength)} caption="Weighted from your active lineup, stamina, and morale." />
-            <MetricCard label="Club Credits" value={String(snapshot.profile.credits)} caption={`${snapshot.profile.season.name} | ${snapshot.profile.managerName} | ${nextRoundLabel}`} />
+            <MetricCard label={t.home.record} value={record} caption="League place updates after each simulated round." />
+            <MetricCard label={t.home.strength} value={String(snapshot.favoriteTeamStrength)} caption="Weighted from your active lineup, stamina, and morale." />
+            <MetricCard label={t.home.credits} value={String(snapshot.profile.credits)} caption={`${snapshot.profile.season.name} | ${snapshot.profile.managerName} | ${nextRoundLabel}`} />
             <MetricCard
-              label="Chemistry"
+              label={t.home.chemistry}
               value={`${snapshot.favoriteChemistry.score}`}
               caption={snapshot.favoriteChemistry.notes[0] ?? "Build a balanced starting five."}
             />
             <MetricCard
-              label="Payroll Room"
+              label={t.home.payrollRoom}
               value={`${snapshot.favoriteCapRoom >= 0 ? "+" : ""}$${snapshot.favoriteCapRoom.toLocaleString()}`}
               caption={`Cap line: $${snapshot.favoriteTeam.budget.toLocaleString()} | Payroll: $${snapshot.favoritePayroll.toLocaleString()}`}
             />
           </section>
 
-          <SectionCard title="Recent Results" actionLabel="Full schedule" actionHref="/schedule">
+          <SectionCard title={t.home.recentResults} actionLabel={t.home.fullSchedule} actionHref="/schedule">
             <div className="grid gap-3">
               {snapshot.recentMatches.length === 0 ? (
-                <p className="text-sm text-slate-300">No games played yet. Simulate round 1 to begin the season.</p>
+                <p className="text-sm text-slate-300">{t.home.noGames}</p>
               ) : (
                 snapshot.recentMatches.map((match) => (
                   <article key={match.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -58,7 +65,7 @@ export default async function Home() {
             </div>
           </SectionCard>
 
-          <SectionCard title="League News" actionLabel="Trade center" actionHref="/trades">
+          <SectionCard title="League News" actionLabel={t.nav.trades} actionHref="/trades">
             <div className="grid gap-3">
               {snapshot.newsFeed.map((item) => (
                 <article key={item} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-sm text-slate-200">
@@ -68,7 +75,7 @@ export default async function Home() {
             </div>
           </SectionCard>
 
-          <SectionCard title="Roster Core" actionLabel="View roster" actionHref="/roster">
+          <SectionCard title={t.home.rosterCore} actionLabel={t.home.viewRoster} actionHref="/roster">
             <div className="grid gap-3 md:grid-cols-2">
               {snapshot.favoriteTeam.players.slice(0, 4).map((player) => (
                 <PlayerShowcaseCard key={player.id} player={player} href={`/players/${player.id}`} />
@@ -78,7 +85,7 @@ export default async function Home() {
         </div>
 
         <div className="grid gap-5">
-          <SectionCard title="League Controls">
+          <SectionCard title={t.home.leagueControls}>
             <div className="grid gap-4">
               <SimulateRoundButton disabled={snapshot.profile.season.status === "COMPLETE"} />
               <StartNextSeasonButton disabled={snapshot.profile.season.status !== "COMPLETE"} />
@@ -87,7 +94,7 @@ export default async function Home() {
           </SectionCard>
 
           {snapshot.profile.season.status === "COMPLETE" ? (
-            <SectionCard title="Season Complete">
+            <SectionCard title={t.home.seasonComplete}>
               <div className="grid gap-3">
                 <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
                   Champion: {snapshot.seasonAwards.champion?.name ?? "TBD"}
@@ -102,7 +109,7 @@ export default async function Home() {
             </SectionCard>
           ) : null}
 
-          <SectionCard title="Club Staff">
+          <SectionCard title={t.home.clubStaff}>
             <div className="grid gap-4">
               {staffDepartments.map((department) => (
                 <article key={department.key} className="rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -125,7 +132,7 @@ export default async function Home() {
             </div>
           </SectionCard>
 
-          <SectionCard title="Chemistry Notes" actionLabel="Tune lineup" actionHref="/lineup">
+          <SectionCard title={t.home.chemistryNotes} actionLabel={t.home.tuneLineup} actionHref="/lineup">
             <div className="grid gap-3">
               {snapshot.favoriteChemistry.notes.map((note) => (
                 <div key={note} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
@@ -135,7 +142,7 @@ export default async function Home() {
             </div>
           </SectionCard>
 
-          <SectionCard title="Next Fixtures">
+          <SectionCard title={t.home.nextFixtures}>
             <div className="grid gap-3">
               {snapshot.nextMatches.map((match) => (
                 <article key={match.id} className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
@@ -148,7 +155,7 @@ export default async function Home() {
             </div>
           </SectionCard>
 
-          <SectionCard title="Standings Snapshot" actionLabel="View standings" actionHref="/standings">
+          <SectionCard title={t.home.standingsSnapshot} actionLabel={t.home.viewStandings} actionHref="/standings">
             <div className="space-y-3">
               {snapshot.teams.slice(0, 5).map((team, index) => (
                 <div key={team.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm">
@@ -163,10 +170,10 @@ export default async function Home() {
             </div>
           </SectionCard>
 
-          <SectionCard title="Franchise History" actionLabel="Full awards" actionHref="/stats">
+          <SectionCard title={t.home.franchiseHistory} actionLabel={t.home.fullAwards} actionHref="/stats">
             <div className="grid gap-3">
               {snapshot.seasonHistory.length === 0 ? (
-                <p className="text-sm text-slate-300">Your front office history will appear here once the first season ends.</p>
+                <p className="text-sm text-slate-300">{t.home.historyEmpty}</p>
               ) : (
                 snapshot.seasonHistory.slice(0, 3).map((entry) => (
                   <div key={entry.seasonId} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm">

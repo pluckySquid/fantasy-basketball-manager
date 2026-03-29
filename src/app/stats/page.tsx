@@ -1,8 +1,11 @@
 import { AppShell } from "@/components/app-shell";
 import { SectionCard } from "@/components/ui";
 import { getGameSnapshot } from "@/lib/game-state";
+import { buildNav, copy, getLocale } from "@/lib/i18n";
 
 export default async function StatsPage() {
+  const locale = await getLocale();
+  const t = copy[locale];
   const snapshot = await getGameSnapshot();
   type LeaderRow = (typeof snapshot.scoringLeaders)[number] & { mvpScore?: number };
 
@@ -35,11 +38,15 @@ export default async function StatsPage() {
 
   return (
     <AppShell
-      title="Season Leaders"
-      subtitle="Track the strongest individual seasons across the league and compare who is driving the MVP race."
+      title={t.stats.title}
+      subtitle={t.stats.subtitle}
+      locale={locale}
+      nav={buildNav(locale)}
+      languageLabels={t.language}
+      appName={t.appName}
     >
       <section className="mb-5 grid gap-5 xl:grid-cols-[1.3fr_1fr]">
-        <SectionCard title="Season Awards">
+        <SectionCard title={t.stats.seasonAwards}>
           <div className="grid gap-3">
             {[
               {
@@ -95,7 +102,7 @@ export default async function StatsPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Contract Watch">
+        <SectionCard title={t.stats.contractWatch}>
           <div className="grid gap-3">
             {snapshot.expiringContracts.length === 0 ? (
               <p className="text-sm text-slate-300">No one on your roster is down to a one-year deal.</p>
@@ -115,7 +122,7 @@ export default async function StatsPage() {
         </SectionCard>
       </section>
 
-      <SectionCard title="Franchise Timeline">
+      <SectionCard title={t.stats.franchiseTimeline}>
         <div className="grid gap-3">
           {snapshot.seasonHistory.length === 0 ? (
             <p className="text-sm text-slate-300">No completed seasons yet. Finish your current campaign to start building history.</p>

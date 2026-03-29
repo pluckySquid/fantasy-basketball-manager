@@ -3,12 +3,15 @@ import { AppShell } from "@/components/app-shell";
 import { ExtendContractButton, TrainPlayerForm } from "@/components/action-forms";
 import { PlayerPortrait, RatingBar, SectionCard } from "@/components/ui";
 import { getPlayerById } from "@/lib/game-state";
+import { buildNav, copy, getLocale } from "@/lib/i18n";
 
 export default async function PlayerDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const locale = await getLocale();
+  const t = copy[locale];
   const { id } = await params;
   const player = await getPlayerById(id);
 
@@ -20,9 +23,13 @@ export default async function PlayerDetailPage({
     <AppShell
       title={`${player.firstName} ${player.lastName}`}
       subtitle={`Detailed player card for ${player.team.name}. Use this page to inspect role fit, salary, and attribute profile.`}
+      locale={locale}
+      nav={buildNav(locale)}
+      languageLabels={t.language}
+      appName={t.appName}
     >
       <div className="grid gap-5 lg:grid-cols-[1.1fr_1fr]">
-        <SectionCard title="Player Snapshot">
+        <SectionCard title={t.player.profile}>
           <div className="rounded-[24px] border border-white/10 bg-[linear-gradient(160deg,rgba(255,255,255,0.14),rgba(255,255,255,0.03))] p-5">
             <PlayerPortrait
               name={`${player.firstName} ${player.lastName}`}
@@ -71,7 +78,7 @@ export default async function PlayerDetailPage({
           </div>
         </SectionCard>
 
-        <SectionCard title="Ratings Breakdown">
+        <SectionCard title={t.player.ratings}>
           <div className="grid gap-4">
             <RatingBar label="Scoring" value={player.scoring} />
             <RatingBar label="Playmaking" value={player.playmaking} />
@@ -84,7 +91,7 @@ export default async function PlayerDetailPage({
       </div>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[1.2fr_1fr]">
-        <SectionCard title="Card Notes">
+        <SectionCard title={t.player.notes}>
           <div className="space-y-3 text-sm text-slate-300">
             <p>{player.firstName} is tagged as a {player.archetype.toLowerCase()} and carries {player.rarity.toLowerCase()} card status in this MVP.</p>
             <p>Training raises one key attribute at a time and can push the overall rating toward the player&apos;s potential cap.</p>
@@ -92,7 +99,7 @@ export default async function PlayerDetailPage({
           </div>
         </SectionCard>
 
-        <SectionCard title="Training Facility">
+        <SectionCard title={t.player.training}>
           <div className="grid gap-4">
             <TrainPlayerForm playerId={player.id} />
             {player.team.id !== "MARKET" ? (
