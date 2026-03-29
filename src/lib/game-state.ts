@@ -15,8 +15,6 @@ import {
 
 const statePath = resolve(process.cwd(), "data", "league-state.json");
 
-const firstNames = ["Mason", "Julian", "Theo", "Noah", "Kai", "Elliot", "Roman", "Miles", "Luca", "Grant", "Owen", "Jaylen", "Caleb", "Evan", "Felix", "Nico"];
-const lastNames = ["Carter", "Vance", "Brooks", "Mercer", "Hayes", "Bennett", "Porter", "Wells", "Sutton", "Reed", "Cross", "Coleman", "Foster", "Quinn", "Maddox", "Sawyer"];
 const teamBlueprint = [
   ["Lakeview", "Falcons", "LVF"],
   ["Northport", "Pilots", "NPP"],
@@ -29,52 +27,161 @@ const teamBlueprint = [
 ] as const;
 const rosterBlueprint: Position[] = ["PG", "SG", "SF", "PF", "C", "PG", "SF", "PF"];
 
-function valueAround(base: number, variance: number) {
-  const delta = Math.floor(Math.random() * (variance * 2 + 1)) - variance;
-  return Math.max(48, Math.min(99, base + delta));
+type RealPlayerSeed = {
+  firstName: string;
+  lastName: string;
+  age: number;
+  position: Position;
+  overall: number;
+  potential: number;
+  archetype:
+    | "Floor General"
+    | "Shot Creator"
+    | "Pure Scorer"
+    | "Two-Way Wing"
+    | "Athletic Slasher"
+    | "Glass Cleaner"
+    | "Rim Protector"
+    | "Playmaking Big";
+};
+
+const realPlayerSeeds: RealPlayerSeed[] = [
+  { firstName: "Nikola", lastName: "Jokic", age: 31, position: "C", overall: 97, potential: 99, archetype: "Playmaking Big" },
+  { firstName: "Giannis", lastName: "Antetokounmpo", age: 31, position: "PF", overall: 96, potential: 98, archetype: "Athletic Slasher" },
+  { firstName: "Luka", lastName: "Doncic", age: 27, position: "PG", overall: 96, potential: 98, archetype: "Shot Creator" },
+  { firstName: "Shai", lastName: "Gilgeous-Alexander", age: 28, position: "PG", overall: 96, potential: 98, archetype: "Shot Creator" },
+  { firstName: "Jayson", lastName: "Tatum", age: 28, position: "SF", overall: 94, potential: 96, archetype: "Two-Way Wing" },
+  { firstName: "Anthony", lastName: "Edwards", age: 25, position: "SG", overall: 93, potential: 97, archetype: "Athletic Slasher" },
+  { firstName: "Victor", lastName: "Wembanyama", age: 22, position: "C", overall: 94, potential: 99, archetype: "Rim Protector" },
+  { firstName: "Stephen", lastName: "Curry", age: 38, position: "PG", overall: 92, potential: 93, archetype: "Pure Scorer" },
+  { firstName: "LeBron", lastName: "James", age: 41, position: "SF", overall: 90, potential: 90, archetype: "Floor General" },
+  { firstName: "Anthony", lastName: "Davis", age: 33, position: "PF", overall: 91, potential: 92, archetype: "Rim Protector" },
+  { firstName: "Donovan", lastName: "Mitchell", age: 30, position: "SG", overall: 91, potential: 93, archetype: "Pure Scorer" },
+  { firstName: "Jalen", lastName: "Brunson", age: 30, position: "PG", overall: 91, potential: 93, archetype: "Shot Creator" },
+  { firstName: "Tyrese", lastName: "Haliburton", age: 26, position: "PG", overall: 91, potential: 94, archetype: "Floor General" },
+  { firstName: "Paolo", lastName: "Banchero", age: 24, position: "PF", overall: 89, potential: 95, archetype: "Shot Creator" },
+  { firstName: "Franz", lastName: "Wagner", age: 25, position: "SF", overall: 88, potential: 93, archetype: "Two-Way Wing" },
+  { firstName: "Evan", lastName: "Mobley", age: 25, position: "PF", overall: 89, potential: 94, archetype: "Rim Protector" },
+  { firstName: "Jaren", lastName: "Jackson Jr.", age: 27, position: "PF", overall: 88, potential: 92, archetype: "Rim Protector" },
+  { firstName: "Tyrese", lastName: "Maxey", age: 26, position: "PG", overall: 88, potential: 92, archetype: "Pure Scorer" },
+  { firstName: "Joel", lastName: "Embiid", age: 32, position: "C", overall: 90, potential: 91, archetype: "Playmaking Big" },
+  { firstName: "Ja", lastName: "Morant", age: 27, position: "PG", overall: 89, potential: 94, archetype: "Athletic Slasher" },
+  { firstName: "Jalen", lastName: "Williams", age: 25, position: "SF", overall: 89, potential: 94, archetype: "Two-Way Wing" },
+  { firstName: "Trae", lastName: "Young", age: 28, position: "PG", overall: 88, potential: 91, archetype: "Floor General" },
+  { firstName: "Devin", lastName: "Booker", age: 29, position: "SG", overall: 90, potential: 93, archetype: "Pure Scorer" },
+  { firstName: "Kevin", lastName: "Durant", age: 38, position: "SF", overall: 89, potential: 90, archetype: "Pure Scorer" },
+  { firstName: "LaMelo", lastName: "Ball", age: 25, position: "PG", overall: 87, potential: 92, archetype: "Floor General" },
+  { firstName: "Zion", lastName: "Williamson", age: 26, position: "PF", overall: 88, potential: 93, archetype: "Athletic Slasher" },
+  { firstName: "Chet", lastName: "Holmgren", age: 24, position: "C", overall: 88, potential: 95, archetype: "Rim Protector" },
+  { firstName: "Kyrie", lastName: "Irving", age: 34, position: "PG", overall: 88, potential: 89, archetype: "Shot Creator" },
+  { firstName: "De'Aaron", lastName: "Fox", age: 29, position: "PG", overall: 87, potential: 90, archetype: "Athletic Slasher" },
+  { firstName: "Domantas", lastName: "Sabonis", age: 30, position: "C", overall: 88, potential: 90, archetype: "Playmaking Big" },
+  { firstName: "Bam", lastName: "Adebayo", age: 29, position: "C", overall: 87, potential: 90, archetype: "Rim Protector" },
+  { firstName: "Damian", lastName: "Lillard", age: 36, position: "PG", overall: 87, potential: 88, archetype: "Pure Scorer" },
+  { firstName: "Kawhi", lastName: "Leonard", age: 35, position: "SF", overall: 87, potential: 88, archetype: "Two-Way Wing" },
+  { firstName: "James", lastName: "Harden", age: 37, position: "PG", overall: 86, potential: 87, archetype: "Floor General" },
+  { firstName: "Rudy", lastName: "Gobert", age: 34, position: "C", overall: 86, potential: 87, archetype: "Rim Protector" },
+  { firstName: "Karl-Anthony", lastName: "Towns", age: 31, position: "C", overall: 87, potential: 89, archetype: "Playmaking Big" },
+  { firstName: "Jaylen", lastName: "Brown", age: 30, position: "SG", overall: 88, potential: 91, archetype: "Two-Way Wing" },
+  { firstName: "Derrick", lastName: "White", age: 32, position: "SG", overall: 84, potential: 86, archetype: "Two-Way Wing" },
+  { firstName: "Scottie", lastName: "Barnes", age: 25, position: "SF", overall: 87, potential: 93, archetype: "Two-Way Wing" },
+  { firstName: "Jamal", lastName: "Murray", age: 29, position: "PG", overall: 86, potential: 89, archetype: "Shot Creator" },
+  { firstName: "Alperen", lastName: "Sengun", age: 24, position: "C", overall: 87, potential: 93, archetype: "Playmaking Big" },
+  { firstName: "Darius", lastName: "Garland", age: 27, position: "PG", overall: 86, potential: 89, archetype: "Floor General" },
+  { firstName: "Jarrett", lastName: "Allen", age: 28, position: "C", overall: 84, potential: 86, archetype: "Rim Protector" },
+  { firstName: "Jalen", lastName: "Johnson", age: 24, position: "PF", overall: 85, potential: 92, archetype: "Athletic Slasher" },
+  { firstName: "Jalen", lastName: "Duren", age: 23, position: "C", overall: 83, potential: 90, archetype: "Glass Cleaner" },
+  { firstName: "Mikal", lastName: "Bridges", age: 30, position: "SF", overall: 84, potential: 86, archetype: "Two-Way Wing" },
+  { firstName: "OG", lastName: "Anunoby", age: 29, position: "SF", overall: 84, potential: 86, archetype: "Two-Way Wing" },
+  { firstName: "Desmond", lastName: "Bane", age: 28, position: "SG", overall: 85, potential: 88, archetype: "Pure Scorer" },
+  { firstName: "Pascal", lastName: "Siakam", age: 32, position: "PF", overall: 86, potential: 88, archetype: "Two-Way Wing" },
+  { firstName: "Myles", lastName: "Turner", age: 30, position: "C", overall: 84, potential: 86, archetype: "Rim Protector" },
+  { firstName: "Lauri", lastName: "Markkanen", age: 29, position: "PF", overall: 85, potential: 88, archetype: "Pure Scorer" },
+  { firstName: "CJ", lastName: "McCollum", age: 35, position: "SG", overall: 82, potential: 83, archetype: "Pure Scorer" },
+  { firstName: "Jrue", lastName: "Holiday", age: 36, position: "PG", overall: 83, potential: 84, archetype: "Two-Way Wing" },
+  { firstName: "Bradley", lastName: "Beal", age: 33, position: "SG", overall: 82, potential: 84, archetype: "Pure Scorer" },
+  { firstName: "DeMar", lastName: "DeRozan", age: 37, position: "SF", overall: 84, potential: 85, archetype: "Pure Scorer" },
+  { firstName: "Julius", lastName: "Randle", age: 31, position: "PF", overall: 84, potential: 86, archetype: "Shot Creator" },
+  { firstName: "Kristaps", lastName: "Porzingis", age: 31, position: "C", overall: 84, potential: 86, archetype: "Rim Protector" },
+  { firstName: "Anfernee", lastName: "Simons", age: 27, position: "SG", overall: 82, potential: 85, archetype: "Pure Scorer" },
+  { firstName: "Cade", lastName: "Cunningham", age: 25, position: "PG", overall: 89, potential: 95, archetype: "Floor General" },
+  { firstName: "Cameron", lastName: "Thomas", age: 25, position: "SG", overall: 82, potential: 86, archetype: "Pure Scorer" },
+  { firstName: "Austin", lastName: "Reaves", age: 28, position: "SG", overall: 83, potential: 87, archetype: "Shot Creator" },
+  { firstName: "Amen", lastName: "Thompson", age: 23, position: "SG", overall: 84, potential: 94, archetype: "Athletic Slasher" },
+  { firstName: "Jabari", lastName: "Smith Jr.", age: 23, position: "PF", overall: 82, potential: 89, archetype: "Two-Way Wing" },
+  { firstName: "Tari", lastName: "Eason", age: 25, position: "PF", overall: 81, potential: 87, archetype: "Two-Way Wing" },
+  { firstName: "Fred", lastName: "VanVleet", age: 32, position: "PG", overall: 82, potential: 84, archetype: "Floor General" },
+  { firstName: "Tyler", lastName: "Herro", age: 26, position: "SG", overall: 84, potential: 87, archetype: "Pure Scorer" },
+  { firstName: "Jalen", lastName: "Green", age: 25, position: "SG", overall: 83, potential: 89, archetype: "Athletic Slasher" },
+  { firstName: "Klay", lastName: "Thompson", age: 36, position: "SG", overall: 80, potential: 81, archetype: "Pure Scorer" },
+  { firstName: "Draymond", lastName: "Green", age: 36, position: "PF", overall: 81, potential: 82, archetype: "Playmaking Big" },
+  { firstName: "Brook", lastName: "Lopez", age: 38, position: "C", overall: 80, potential: 81, archetype: "Rim Protector" },
+  { firstName: "Nic", lastName: "Claxton", age: 27, position: "C", overall: 81, potential: 85, archetype: "Rim Protector" },
+  { firstName: "Josh", lastName: "Giddey", age: 24, position: "SG", overall: 82, potential: 88, archetype: "Floor General" },
+  { firstName: "RJ", lastName: "Barrett", age: 26, position: "SF", overall: 82, potential: 86, archetype: "Athletic Slasher" },
+  { firstName: "Brandon", lastName: "Ingram", age: 29, position: "SF", overall: 85, potential: 88, archetype: "Shot Creator" },
+  { firstName: "Dejounte", lastName: "Murray", age: 30, position: "PG", overall: 84, potential: 87, archetype: "Two-Way Wing" },
+  { firstName: "Jalen", lastName: "Suggs", age: 25, position: "SG", overall: 83, potential: 88, archetype: "Two-Way Wing" },
+  { firstName: "Jakob", lastName: "Poeltl", age: 31, position: "C", overall: 80, potential: 82, archetype: "Glass Cleaner" },
+  { firstName: "Walker", lastName: "Kessler", age: 25, position: "C", overall: 82, potential: 88, archetype: "Rim Protector" },
+  { firstName: "Andrew", lastName: "Nembhard", age: 26, position: "PG", overall: 81, potential: 85, archetype: "Floor General" },
+  { firstName: "Aaron", lastName: "Gordon", age: 31, position: "PF", overall: 83, potential: 85, archetype: "Athletic Slasher" },
+  { firstName: "Michael", lastName: "Porter Jr.", age: 28, position: "SF", overall: 83, potential: 85, archetype: "Pure Scorer" },
+  { firstName: "Herbert", lastName: "Jones", age: 28, position: "SF", overall: 82, potential: 85, archetype: "Two-Way Wing" },
+  { firstName: "Norman", lastName: "Powell", age: 33, position: "SG", overall: 82, potential: 83, archetype: "Pure Scorer" },
+  { firstName: "Deni", lastName: "Avdija", age: 25, position: "SF", overall: 82, potential: 87, archetype: "Two-Way Wing" },
+  { firstName: "Ivica", lastName: "Zubac", age: 29, position: "C", overall: 82, potential: 84, archetype: "Glass Cleaner" },
+];
+
+function clampRating(value: number) {
+  return Math.max(55, Math.min(99, value));
 }
 
-function generatePlayer(teamIndex: number, rosterIndex: number, position: Position, teamId: string): PlayerState {
-  const base = 67 + Math.floor(Math.random() * 14) + (rosterIndex < 5 ? 4 : 0) + (teamIndex === 0 ? 2 : 0);
-  const scoringBias = position === "SG" || position === "SF" ? 4 : 0;
-  const playmakingBias = position === "PG" ? 6 : 0;
-  const reboundingBias = position === "PF" || position === "C" ? 6 : 0;
-  const defenseBias = rosterIndex % 2 === 0 ? 3 : 0;
-  const overall = valueAround(base, 5);
-  const scoring = valueAround(base + scoringBias, 8);
-  const playmaking = valueAround(base + playmakingBias, 9);
-  const rebounding = valueAround(base + reboundingBias, 7);
-  const defense = valueAround(base + defenseBias, 7);
+function rarityFromOverall(overall: number): PlayerState["rarity"] {
+  if (overall >= 90) {
+    return "Platinum";
+  }
+  if (overall >= 85) {
+    return "Gold";
+  }
+  if (overall >= 79) {
+    return "Silver";
+  }
+  return "Bronze";
+}
 
-  const archetype =
-    Math.max(scoring, playmaking, rebounding, defense) === playmaking
-      ? "Floor General"
-      : Math.max(scoring, playmaking, rebounding, defense) === defense
-        ? "Lockdown Wing"
-        : Math.max(scoring, playmaking, rebounding, defense) === rebounding
-          ? "Glass Cleaner"
-          : "Shot Creator";
-  const rarity =
-    overall >= 88 ? "Platinum" : overall >= 82 ? "Gold" : overall >= 75 ? "Silver" : "Bronze";
+function createPlayerFromSeed(seed: RealPlayerSeed, teamId: string, index: number): PlayerState {
+  const variance = (index % 5) - 2;
+  const templates = {
+    "Floor General": { scoring: -2, playmaking: 7, rebounding: -4, defense: 0, stamina: 2 },
+    "Shot Creator": { scoring: 6, playmaking: 2, rebounding: -2, defense: -1, stamina: 1 },
+    "Pure Scorer": { scoring: 8, playmaking: 0, rebounding: -3, defense: -2, stamina: 0 },
+    "Two-Way Wing": { scoring: 2, playmaking: 0, rebounding: 0, defense: 6, stamina: 2 },
+    "Athletic Slasher": { scoring: 4, playmaking: 1, rebounding: 1, defense: 1, stamina: 5 },
+    "Glass Cleaner": { scoring: -4, playmaking: -4, rebounding: 8, defense: 2, stamina: 2 },
+    "Rim Protector": { scoring: -3, playmaking: -4, rebounding: 5, defense: 9, stamina: 2 },
+    "Playmaking Big": { scoring: 1, playmaking: 5, rebounding: 5, defense: 1, stamina: 1 },
+  } as const;
+  const template = templates[seed.archetype];
 
   return {
     id: randomUUID(),
     teamId,
-    firstName: firstNames[(teamIndex * 2 + rosterIndex) % firstNames.length],
-    lastName: lastNames[(teamIndex * 3 + rosterIndex) % lastNames.length],
-    age: 20 + ((teamIndex + rosterIndex) % 12),
-    position,
-    overall,
-    scoring,
-    playmaking,
-    rebounding,
-    defense,
-    stamina: valueAround(base + 2, 6),
-    salary: 650 + base * 18 + rosterIndex * 20,
-    morale: valueAround(74, 10),
-    rarity,
-    archetype,
-    potential: Math.max(overall + 2, valueAround(base + 8, 6)),
+    firstName: seed.firstName,
+    lastName: seed.lastName,
+    age: seed.age,
+    position: seed.position,
+    overall: seed.overall,
+    scoring: clampRating(seed.overall + template.scoring + variance),
+    playmaking: clampRating(seed.overall + template.playmaking - variance),
+    rebounding: clampRating(seed.overall + template.rebounding + (index % 3) - 1),
+    defense: clampRating(seed.overall + template.defense - (index % 2)),
+    stamina: clampRating(seed.overall + template.stamina + 1),
+    salary: 800 + seed.overall * 24,
+    morale: clampRating(72 + (index % 10)),
+    rarity: rarityFromOverall(seed.overall),
+    archetype: seed.archetype,
+    potential: seed.potential,
   };
 }
 
@@ -130,16 +237,28 @@ function buildInitialState(): LeagueState {
     pointsAgainst: 0,
   }));
 
+  const rosterSeedCount = teams.length * rosterBlueprint.length;
+  const rosterSeeds = realPlayerSeeds.slice(0, rosterSeedCount);
+  const marketSeeds = realPlayerSeeds.slice(rosterSeedCount, rosterSeedCount + 8);
+  const reserveSeeds = realPlayerSeeds.slice(rosterSeedCount + 8);
+
   const players = teams.flatMap((team, teamIndex) =>
-    rosterBlueprint.map((position, rosterIndex) => generatePlayer(teamIndex, rosterIndex, position, team.id)),
+    rosterBlueprint.map((position, rosterIndex) => {
+      const seed = rosterSeeds[teamIndex * rosterBlueprint.length + rosterIndex];
+      const resolvedSeed =
+        seed.position === position ? seed : { ...seed, position };
+      return createPlayerFromSeed(resolvedSeed, team.id, teamIndex * rosterBlueprint.length + rosterIndex);
+    }),
   );
-  const marketPlayers = Array.from({ length: 12 }, (_, index) =>
-    generatePlayer(teams.length + index, index % rosterBlueprint.length, rosterBlueprint[index % rosterBlueprint.length], "MARKET"),
-  ).map((player, index) => ({
-    ...player,
+
+  const marketPlayers = marketSeeds.map((seed, index) => ({
+    ...createPlayerFromSeed(seed, "MARKET", rosterSeedCount + index),
     teamId: "MARKET",
-    salary: player.salary + 150,
-    potential: Math.max(player.potential, player.overall + 4 + (index % 4)),
+    salary: 950 + seed.overall * 26,
+  }));
+  const reservePlayers = reserveSeeds.map((seed, index) => ({
+    ...createPlayerFromSeed(seed, "RESERVE", rosterSeedCount + marketSeeds.length + index),
+    teamId: "RESERVE",
   }));
 
   const lineups = teams.map((team) => {
@@ -173,6 +292,7 @@ function buildInitialState(): LeagueState {
     teams,
     players,
     marketPlayers,
+    reservePlayers,
     lineups,
     matches,
   };
@@ -215,6 +335,7 @@ export async function ensureLeagueReady() {
       favoriteTeam?.medicalLevel === undefined ||
       favoriteTeam?.scoutingLevel === undefined ||
       state.marketPlayers === undefined ||
+      state.reservePlayers === undefined ||
       state.players[0]?.rarity === undefined ||
       state.players[0]?.archetype === undefined ||
       state.players[0]?.potential === undefined
@@ -259,15 +380,6 @@ function staffUpgradeCost(level: number) {
 
 function packCost(type: "standard" | "elite") {
   return type === "elite" ? 520 : 260;
-}
-
-function generateMarketProspect(seed: number): PlayerState {
-  return generatePlayer(
-    teamBlueprint.length + seed,
-    seed % rosterBlueprint.length,
-    rosterBlueprint[seed % rosterBlueprint.length],
-    "MARKET",
-  );
 }
 
 export async function saveFavoriteLineup(formData: FormData) {
@@ -507,9 +619,12 @@ export async function openPack(type: "standard" | "elite") {
   if (state.profile.credits < cost) {
     return { ok: false as const, message: `Not enough credits. ${type} pack costs ${cost}.` };
   }
+  if (state.reservePlayers.length === 0) {
+    return { ok: false as const, message: "No more real-player packs are available in this build." };
+  }
 
   state.profile.credits -= cost;
-  const player = generateMarketProspect(state.marketPlayers.length + state.players.length + (type === "elite" ? 7 : 3));
+  const player = state.reservePlayers.shift()!;
   const boosted =
     type === "elite"
       ? {

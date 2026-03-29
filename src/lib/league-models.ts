@@ -88,6 +88,7 @@ export type LeagueState = {
   teams: TeamState[];
   players: PlayerState[];
   marketPlayers: PlayerState[];
+  reservePlayers: PlayerState[];
   lineups: LineupState[];
   matches: MatchState[];
 };
