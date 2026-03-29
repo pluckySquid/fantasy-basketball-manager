@@ -1,14 +1,23 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { resetLeague, saveFavoriteLineup, simulateNextRound, upgradeStaffDepartment } from "@/lib/game-state";
+import {
+  resetLeague,
+  saveFavoriteLineup,
+  signMarketPlayer,
+  simulateNextRound,
+  trainPlayer,
+  upgradeStaffDepartment,
+} from "@/lib/game-state";
 
 function refreshLeaguePaths() {
   revalidatePath("/");
   revalidatePath("/roster");
   revalidatePath("/lineup");
+  revalidatePath("/market");
   revalidatePath("/schedule");
   revalidatePath("/standings");
+  revalidatePath("/players/[id]", "page");
 }
 
 export async function saveLineupAction(_: { ok: boolean; message: string }, formData: FormData) {
@@ -41,6 +50,37 @@ export async function upgradeStaffAction(
   }
 
   const result = await upgradeStaffDepartment(department);
+  refreshLeaguePaths();
+  return result;
+}
+
+export async function signPlayerAction(
+  _: { ok: boolean; message: string },
+  formData: FormData,
+) {
+  const playerId = String(formData.get("playerId") ?? "");
+  const result = await signMarketPlayer(playerId);
+  refreshLeaguePaths();
+  return result;
+}
+
+export async function trainPlayerAction(
+  _: { ok: boolean; message: string },
+  formData: FormData,
+) {
+  const playerId = String(formData.get("playerId") ?? "");
+  const focus = String(formData.get("focus") ?? "");
+  if (
+    focus !== "scoring" &&
+    focus !== "playmaking" &&
+    focus !== "rebounding" &&
+    focus !== "defense" &&
+    focus !== "stamina"
+  ) {
+    return { ok: false as const, message: "Unknown training focus." };
+  }
+
+  const result = await trainPlayer(playerId, focus);
   refreshLeaguePaths();
   return result;
 }

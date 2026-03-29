@@ -13,6 +13,19 @@ function playerTier(overall: number) {
   return { label: "Rotation", styles: "bg-slate-300/10 text-slate-100 border-white/10" };
 }
 
+function rarityStyles(rarity: "Bronze" | "Silver" | "Gold" | "Platinum") {
+  switch (rarity) {
+    case "Platinum":
+      return "from-cyan-300/30 via-slate-100/10 to-indigo-400/25 border-cyan-200/30";
+    case "Gold":
+      return "from-amber-300/30 via-slate-100/10 to-orange-400/25 border-amber-200/30";
+    case "Silver":
+      return "from-slate-300/25 via-slate-100/10 to-sky-200/20 border-slate-200/20";
+    default:
+      return "from-orange-800/30 via-slate-100/10 to-amber-900/20 border-orange-300/20";
+  }
+}
+
 function playerArchetype({
   scoring,
   playmaking,
@@ -112,6 +125,9 @@ export function PlayerShowcaseCard({
     defense: number;
     stamina: number;
     salary: number;
+    rarity: "Bronze" | "Silver" | "Gold" | "Platinum";
+    archetype: string;
+    potential: number;
   };
   href: string;
 }) {
@@ -121,7 +137,7 @@ export function PlayerShowcaseCard({
   return (
     <Link
       href={href}
-      className="group rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] p-5 shadow-lg shadow-slate-950/20 transition hover:-translate-y-1 hover:border-amber-300/40"
+      className={`group rounded-[28px] border bg-[linear-gradient(160deg,var(--tw-gradient-stops))] p-5 shadow-lg shadow-slate-950/20 transition hover:-translate-y-1 hover:border-amber-300/40 ${rarityStyles(player.rarity)}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
@@ -136,6 +152,10 @@ export function PlayerShowcaseCard({
         <div className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${tier.styles}`}>
           {tier.label}
         </div>
+      </div>
+      <div className="mt-3 flex items-center justify-between text-xs uppercase tracking-[0.25em] text-slate-300">
+        <span>{player.rarity}</span>
+        <span>{player.archetype}</span>
       </div>
       <div className="mt-5 grid grid-cols-2 gap-3">
         <div className="rounded-2xl bg-slate-950/70 p-3">
@@ -152,6 +172,7 @@ export function PlayerShowcaseCard({
         <RatingBar label="Playmaking" value={player.playmaking} />
         <RatingBar label="Rebounding" value={player.rebounding} />
         <RatingBar label="Defense" value={player.defense} />
+        <RatingBar label="Potential" value={player.potential} />
       </div>
     </Link>
   );

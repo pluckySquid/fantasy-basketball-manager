@@ -30,6 +30,9 @@ export type PlayerState = {
   stamina: number;
   salary: number;
   morale: number;
+  rarity: "Bronze" | "Silver" | "Gold" | "Platinum";
+  archetype: string;
+  potential: number;
 };
 
 export type MatchState = {
@@ -84,6 +87,7 @@ export type LeagueState = {
   profile: UserProfileState;
   teams: TeamState[];
   players: PlayerState[];
+  marketPlayers: PlayerState[];
   lineups: LineupState[];
   matches: MatchState[];
 };

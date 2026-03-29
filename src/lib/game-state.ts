@@ -40,6 +40,22 @@ function generatePlayer(teamIndex: number, rosterIndex: number, position: Positi
   const playmakingBias = position === "PG" ? 6 : 0;
   const reboundingBias = position === "PF" || position === "C" ? 6 : 0;
   const defenseBias = rosterIndex % 2 === 0 ? 3 : 0;
+  const overall = valueAround(base, 5);
+  const scoring = valueAround(base + scoringBias, 8);
+  const playmaking = valueAround(base + playmakingBias, 9);
+  const rebounding = valueAround(base + reboundingBias, 7);
+  const defense = valueAround(base + defenseBias, 7);
+
+  const archetype =
+    Math.max(scoring, playmaking, rebounding, defense) === playmaking
+      ? "Floor General"
+      : Math.max(scoring, playmaking, rebounding, defense) === defense
+        ? "Lockdown Wing"
+        : Math.max(scoring, playmaking, rebounding, defense) === rebounding
+          ? "Glass Cleaner"
+          : "Shot Creator";
+  const rarity =
+    overall >= 88 ? "Platinum" : overall >= 82 ? "Gold" : overall >= 75 ? "Silver" : "Bronze";
 
   return {
     id: randomUUID(),
@@ -48,14 +64,17 @@ function generatePlayer(teamIndex: number, rosterIndex: number, position: Positi
     lastName: lastNames[(teamIndex * 3 + rosterIndex) % lastNames.length],
     age: 20 + ((teamIndex + rosterIndex) % 12),
     position,
-    overall: valueAround(base, 5),
-    scoring: valueAround(base + scoringBias, 8),
-    playmaking: valueAround(base + playmakingBias, 9),
-    rebounding: valueAround(base + reboundingBias, 7),
-    defense: valueAround(base + defenseBias, 7),
+    overall,
+    scoring,
+    playmaking,
+    rebounding,
+    defense,
     stamina: valueAround(base + 2, 6),
     salary: 650 + base * 18 + rosterIndex * 20,
     morale: valueAround(74, 10),
+    rarity,
+    archetype,
+    potential: Math.max(overall + 2, valueAround(base + 8, 6)),
   };
 }
 
@@ -114,6 +133,14 @@ function buildInitialState(): LeagueState {
   const players = teams.flatMap((team, teamIndex) =>
     rosterBlueprint.map((position, rosterIndex) => generatePlayer(teamIndex, rosterIndex, position, team.id)),
   );
+  const marketPlayers = Array.from({ length: 12 }, (_, index) =>
+    generatePlayer(teams.length + index, index % rosterBlueprint.length, rosterBlueprint[index % rosterBlueprint.length], "MARKET"),
+  ).map((player, index) => ({
+    ...player,
+    teamId: "MARKET",
+    salary: player.salary + 150,
+    potential: Math.max(player.potential, player.overall + 4 + (index % 4)),
+  }));
 
   const lineups = teams.map((team) => {
     const roster = players.filter((player) => player.teamId === team.id);
@@ -145,6 +172,7 @@ function buildInitialState(): LeagueState {
     profile: { id: randomUUID(), managerName: "Solo Manager", favoriteTeamId: teams[0].id, seasonId, credits: 1200 },
     teams,
     players,
+    marketPlayers,
     lineups,
     matches,
   };
@@ -185,7 +213,11 @@ export async function ensureLeagueReady() {
       state.profile.credits === undefined ||
       favoriteTeam?.trainingLevel === undefined ||
       favoriteTeam?.medicalLevel === undefined ||
-      favoriteTeam?.scoutingLevel === undefined
+      favoriteTeam?.scoutingLevel === undefined ||
+      state.marketPlayers === undefined ||
+      state.players[0]?.rarity === undefined ||
+      state.players[0]?.archetype === undefined ||
+      state.players[0]?.potential === undefined
     ) {
       await resetLeague();
     }
@@ -217,6 +249,7 @@ export async function getGameSnapshot() {
     pendingRound: matches.find((match) => !match.played)?.round ?? state.season.totalRounds,
     recentMatches: matches.filter((match) => match.played).slice(-5).reverse(),
     nextMatches: matches.filter((match) => !match.played).slice(0, 4),
+    marketPlayers: [...state.marketPlayers].sort((left, right) => right.overall - left.overall),
   };
 }
 
@@ -335,6 +368,75 @@ export async function upgradeStaffDepartment(department: "training" | "medical" 
   return { ok: true as const, message: `${department} staff upgraded to level ${currentLevel + 1}.` };
 }
 
+function normalizePlayerOverall(player: PlayerState) {
+  const weighted = Math.round(
+    player.scoring * 0.3 +
+      player.playmaking * 0.18 +
+      player.rebounding * 0.16 +
+      player.defense * 0.18 +
+      player.stamina * 0.18,
+  );
+  return Math.max(player.overall, Math.min(player.potential, weighted));
+}
+
+export async function trainPlayer(playerId: string, focus: "scoring" | "playmaking" | "rebounding" | "defense" | "stamina") {
+  await ensureLeagueReady();
+  const state = await readLeagueState();
+  const player = state.players.find((entry) => entry.id === playerId && entry.teamId === state.profile.favoriteTeamId);
+  const team = state.teams.find((entry) => entry.id === state.profile.favoriteTeamId)!;
+
+  if (!player) {
+    return { ok: false as const, message: "That player is not on your roster." };
+  }
+
+  const cost = 140 + team.trainingLevel * 40;
+  if (state.profile.credits < cost) {
+    return { ok: false as const, message: `Not enough credits. Training costs ${cost}.` };
+  }
+
+  state.profile.credits -= cost;
+  state.players = state.players.map((entry) => {
+    if (entry.id !== playerId) {
+      return entry;
+    }
+
+    const nextValue = Math.min(entry.potential + 2, entry[focus] + 2 + team.trainingLevel);
+    const updated = {
+      ...entry,
+      [focus]: nextValue,
+      morale: Math.min(99, entry.morale + 2),
+    };
+    updated.overall = normalizePlayerOverall(updated);
+    return updated;
+  });
+
+  await writeLeagueState(state);
+  return { ok: true as const, message: `${player.firstName} ${player.lastName} improved ${focus}.` };
+}
+
+export async function signMarketPlayer(playerId: string) {
+  await ensureLeagueReady();
+  const state = await readLeagueState();
+  const player = state.marketPlayers.find((entry) => entry.id === playerId);
+  const team = state.teams.find((entry) => entry.id === state.profile.favoriteTeamId)!;
+
+  if (!player) {
+    return { ok: false as const, message: "That player is no longer on the market." };
+  }
+
+  const price = player.salary + team.scoutingLevel * 80;
+  if (state.profile.credits < price) {
+    return { ok: false as const, message: `Not enough credits. Signing costs ${price}.` };
+  }
+
+  state.profile.credits -= price;
+  state.marketPlayers = state.marketPlayers.filter((entry) => entry.id !== playerId);
+  state.players.push({ ...player, teamId: state.profile.favoriteTeamId, morale: Math.min(99, player.morale + 5) });
+
+  await writeLeagueState(state);
+  return { ok: true as const, message: `${player.firstName} ${player.lastName} joined your club.` };
+}
+
 export function getStaffDepartments(team: LeagueState["teams"][number]) {
   return [
     {
@@ -364,13 +466,28 @@ export function getStaffDepartments(team: LeagueState["teams"][number]) {
 export async function getPlayerById(playerId: string) {
   await ensureLeagueReady();
   const state = await readLeagueState();
-  const player = state.players.find((entry) => entry.id === playerId);
+  const player = state.players.find((entry) => entry.id === playerId) ?? state.marketPlayers.find((entry) => entry.id === playerId);
   if (!player) {
     return null;
   }
 
   return {
     ...player,
-    team: state.teams.find((team) => team.id === player.teamId)!,
+    team:
+      state.teams.find((team) => team.id === player.teamId) ??
+      {
+        id: "MARKET",
+        name: "Free Agent Market",
+        city: "Open",
+        abbreviation: "FA",
+        budget: 0,
+        trainingLevel: 0,
+        medicalLevel: 0,
+        scoutingLevel: 0,
+        wins: 0,
+        losses: 0,
+        pointsFor: 0,
+        pointsAgainst: 0,
+      },
   };
 }

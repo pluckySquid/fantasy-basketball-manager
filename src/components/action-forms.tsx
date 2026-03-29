@@ -1,7 +1,14 @@
 "use client";
 
 import { useActionState } from "react";
-import { resetLeagueAction, saveLineupAction, simulateRoundAction, upgradeStaffAction } from "@/app/actions";
+import {
+  resetLeagueAction,
+  saveLineupAction,
+  signPlayerAction,
+  simulateRoundAction,
+  trainPlayerAction,
+  upgradeStaffAction,
+} from "@/app/actions";
 
 const initialState = { ok: true, message: "" };
 
@@ -118,6 +125,69 @@ export function StaffUpgradeButton({
         className="w-full rounded-2xl bg-white/6 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {pending ? "Upgrading..." : `Upgrade ${label} (${cost} cr)`}
+      </button>
+      {state.message ? <p className={`text-xs ${state.ok ? "text-slate-400" : "text-rose-300"}`}>{state.message}</p> : null}
+    </form>
+  );
+}
+
+export function SignPlayerButton({
+  playerId,
+  price,
+}: {
+  playerId: string;
+  price: number;
+}) {
+  const [state, action, pending] = useActionState(signPlayerAction, initialState);
+
+  return (
+    <form action={action} className="space-y-2">
+      <input type="hidden" name="playerId" value={playerId} />
+      <button
+        type="submit"
+        disabled={pending}
+        className="w-full rounded-2xl bg-amber-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-300"
+      >
+        {pending ? "Signing..." : `Sign for ${price} cr`}
+      </button>
+      {state.message ? <p className={`text-xs ${state.ok ? "text-slate-400" : "text-rose-300"}`}>{state.message}</p> : null}
+    </form>
+  );
+}
+
+export function TrainPlayerForm({ playerId }: { playerId: string }) {
+  const [state, action, pending] = useActionState(trainPlayerAction, initialState);
+  const options = [
+    ["scoring", "Scoring Session"],
+    ["playmaking", "Playmaking Session"],
+    ["rebounding", "Rebounding Session"],
+    ["defense", "Defense Session"],
+    ["stamina", "Conditioning Session"],
+  ] as const;
+
+  return (
+    <form action={action} className="grid gap-3">
+      <input type="hidden" name="playerId" value={playerId} />
+      <label className="grid gap-2">
+        <span className="text-sm font-medium text-slate-200">Training focus</span>
+        <select
+          name="focus"
+          defaultValue="scoring"
+          className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white outline-none transition focus:border-amber-300/70"
+        >
+          {options.map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button
+        type="submit"
+        disabled={pending}
+        className="rounded-2xl bg-emerald-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-300"
+      >
+        {pending ? "Training..." : "Run Training"}
       </button>
       {state.message ? <p className={`text-xs ${state.ok ? "text-slate-400" : "text-rose-300"}`}>{state.message}</p> : null}
     </form>
