@@ -629,6 +629,100 @@ function refillLeagueRosters(state: LeagueState) {
   state.reservePlayers = leftoverPool.slice(12).map((player) => ({ ...player, teamId: "RESERVE" }));
 }
 
+function rebuildTeamLineup(state: LeagueState, teamId: string) {
+  const roster = state.players
+    .filter((player) => player.teamId === teamId)
+    .sort((left, right) => right.overall - left.overall);
+  const lineup = state.lineups.find((entry) => entry.teamId === teamId);
+  if (!lineup || roster.length < 8) {
+    return;
+  }
+  lineup.slotsJson = stringifyLineupSlots(autoBuildLineup(roster));
+}
+
+function buildTradeBoard(state: LeagueState, favoriteTeam: TeamWithRoster) {
+  const favoriteRoster = [...favoriteTeam.players].sort((left, right) => left.overall - right.overall);
+  const tradeableFavorite = favoriteRoster.slice(0, Math.min(5, favoriteRoster.length));
+  const proposals: Array<{
+    id: string;
+    givePlayer: PlayerState;
+    receivePlayer: PlayerState;
+    partnerTeam: TeamState;
+    delta: number;
+    summary: string;
+  }> = [];
+
+  for (const givePlayer of tradeableFavorite) {
+    for (const partner of state.teams.filter((team) => team.id !== favoriteTeam.id)) {
+      const partnerRoster = state.players
+        .filter((player) => player.teamId === partner.id)
+        .sort((left, right) => right.overall - left.overall);
+      const partnerCandidate = partnerRoster.find((player) => {
+        const delta = tradeValue(player) - tradeValue(givePlayer);
+        const incomingPayroll = getPayroll(favoriteTeam) - givePlayer.salary + player.salary;
+        const partnerPayroll = getPayroll(enrichTeam(state, partner.id)) - player.salary + givePlayer.salary;
+        return Math.abs(delta) <= 140 && incomingPayroll <= favoriteTeam.budget && partnerPayroll <= partner.budget;
+      });
+
+      if (!partnerCandidate) {
+        continue;
+      }
+
+      const delta = tradeValue(partnerCandidate) - tradeValue(givePlayer);
+      proposals.push({
+        id: `${givePlayer.id}-${partnerCandidate.id}`,
+        givePlayer,
+        receivePlayer: partnerCandidate,
+        partnerTeam: partner,
+        delta,
+        summary:
+          delta >= 0
+            ? `${partner.abbreviation} is open to a talent-upside swap if you move ${givePlayer.lastName}.`
+            : `${partner.abbreviation} will take your cheaper piece to balance roles and salary.`,
+      });
+    }
+  }
+
+  return proposals
+    .sort((left, right) => Math.abs(left.delta) - Math.abs(right.delta) || right.receivePlayer.overall - left.receivePlayer.overall)
+    .slice(0, 8);
+}
+
+function buildNewsFeed(snapshot: {
+  recentMatches: Array<{ round: number; summary: string | null; homeTeam: { abbreviation: string }; awayTeam: { abbreviation: string }; homeScore: number | null; awayScore: number | null }>;
+  favoriteChemistry: { score: number; notes: string[] };
+  expiringContracts: Array<{ firstName: string; lastName: string }>;
+  seasonAwards: { champion: { name: string } | null; mvp: { player: { firstName: string; lastName: string } } | null };
+  profile: { season: { status: "IN_PROGRESS" | "COMPLETE" } };
+  favoriteCapRoom: number;
+}) {
+  const feed: string[] = [];
+  if (snapshot.recentMatches[0]) {
+    const game = snapshot.recentMatches[0];
+    feed.push(`Round ${game.round}: ${game.awayTeam.abbreviation} ${game.awayScore} at ${game.homeTeam.abbreviation} ${game.homeScore}. ${game.summary ?? ""}`.trim());
+  }
+  if (snapshot.favoriteChemistry.score >= 80) {
+    feed.push(`Front office buzz: the starting five has found a strong rhythm. ${snapshot.favoriteChemistry.notes[0] ?? ""}`.trim());
+  } else if (snapshot.favoriteChemistry.score < 65) {
+    feed.push(`Analysts are questioning the fit of your first unit. ${snapshot.favoriteChemistry.notes[0] ?? ""}`.trim());
+  }
+  if (snapshot.expiringContracts[0]) {
+    feed.push(`Contract watch: ${snapshot.expiringContracts[0].firstName} ${snapshot.expiringContracts[0].lastName} is entering the danger zone on negotiations.`);
+  }
+  if (snapshot.favoriteCapRoom < 0) {
+    feed.push("Finance desk: the club is operating above the soft cap and needs salary relief.");
+  } else if (snapshot.favoriteCapRoom < 1200) {
+    feed.push("Finance desk: cap room is getting tight, so every signing decision matters.");
+  }
+  if (snapshot.profile.season.status === "COMPLETE") {
+    feed.push(`Season finale: ${snapshot.seasonAwards.champion?.name ?? "A league favorite"} claimed the title.`);
+    if (snapshot.seasonAwards.mvp) {
+      feed.push(`Award season: ${snapshot.seasonAwards.mvp.player.firstName} ${snapshot.seasonAwards.mvp.player.lastName} headlines the MVP vote.`);
+    }
+  }
+  return feed.slice(0, 5);
+}
+
 export async function resetLeague() {
   const state = buildInitialState();
   await writeLeagueState(state);
@@ -757,6 +851,15 @@ export async function getGameSnapshot() {
       extensionCost: contractExtensionCost(player),
     }))
     .sort((left, right) => right.overall - left.overall);
+  const tradeBoard = buildTradeBoard(state, favoriteTeam);
+  const newsFeed = buildNewsFeed({
+    recentMatches: matches.filter((match) => match.played).slice(-5).reverse(),
+    favoriteChemistry,
+    expiringContracts,
+    seasonAwards,
+    profile: { season: state.season },
+    favoriteCapRoom: favoriteTeam.budget - favoritePayroll,
+  });
 
   return {
     profile: { ...state.profile, season: state.season },
@@ -781,6 +884,8 @@ export async function getGameSnapshot() {
     seasonAwards,
     expiringContracts,
     seasonHistory: state.seasonHistory,
+    tradeBoard,
+    newsFeed,
   };
 }
 
@@ -794,6 +899,12 @@ function packCost(type: "standard" | "elite") {
 
 function contractExtensionCost(player: PlayerState) {
   return Math.round(player.salary * 0.6 + player.overall * 18 + Math.max(0, 3 - player.contractYears) * 120);
+}
+
+function tradeValue(player: PlayerState) {
+  const rarityBoost =
+    player.rarity === "Platinum" ? 22 : player.rarity === "Gold" ? 14 : player.rarity === "Silver" ? 8 : 3;
+  return player.overall * 11 + player.potential * 4 + player.contractYears * 16 + rarityBoost;
 }
 
 export async function saveFavoriteLineup(formData: FormData) {
@@ -1070,6 +1181,54 @@ export async function extendContract(playerId: string) {
 
   await writeLeagueState(state);
   return { ok: true as const, message: `${player.firstName} ${player.lastName} signed a one-year extension.` };
+}
+
+export async function executeTrade(givePlayerId: string, receivePlayerId: string) {
+  await ensureLeagueReady();
+  const state = await readLeagueState();
+  ensureCompleteState(state);
+
+  const givePlayer = state.players.find((entry) => entry.id === givePlayerId && entry.teamId === state.profile.favoriteTeamId);
+  const receivePlayer = state.players.find((entry) => entry.id === receivePlayerId && entry.teamId !== state.profile.favoriteTeamId);
+
+  if (!givePlayer || !receivePlayer) {
+    return { ok: false as const, message: "Trade target is no longer available." };
+  }
+
+  const partnerTeam = state.teams.find((team) => team.id === receivePlayer.teamId)!;
+  const favoriteTeam = enrichTeam(state, state.profile.favoriteTeamId);
+  const partnerRoster = enrichTeam(state, partnerTeam.id);
+  const valueDelta = tradeValue(receivePlayer) - tradeValue(givePlayer);
+  const favoriteIncomingPayroll = getPayroll(favoriteTeam) - givePlayer.salary + receivePlayer.salary;
+  const partnerIncomingPayroll = getPayroll(partnerRoster) - receivePlayer.salary + givePlayer.salary;
+
+  if (Math.abs(valueDelta) > 140) {
+    return { ok: false as const, message: "The other team rejected the value of this offer." };
+  }
+  if (favoriteIncomingPayroll > favoriteTeam.budget) {
+    return { ok: false as const, message: "That trade would push you over the salary limit." };
+  }
+  if (partnerIncomingPayroll > partnerTeam.budget) {
+    return { ok: false as const, message: "The other team cannot absorb this contract." };
+  }
+
+  state.players = state.players.map((player) => {
+    if (player.id === givePlayer.id) {
+      return { ...player, teamId: partnerTeam.id, morale: Math.max(62, player.morale - 2) };
+    }
+    if (player.id === receivePlayer.id) {
+      return { ...player, teamId: state.profile.favoriteTeamId, morale: Math.min(99, player.morale + 3) };
+    }
+    return player;
+  });
+
+  rebuildTeamLineup(state, state.profile.favoriteTeamId);
+  rebuildTeamLineup(state, partnerTeam.id);
+  await writeLeagueState(state);
+  return {
+    ok: true as const,
+    message: `${partnerTeam.abbreviation} accepted. ${receivePlayer.firstName} ${receivePlayer.lastName} joined your club.`,
+  };
 }
 
 export async function signMarketPlayer(playerId: string) {

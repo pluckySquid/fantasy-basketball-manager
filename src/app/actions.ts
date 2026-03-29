@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import {
   extendContract,
+  executeTrade,
   openPack,
   resetLeague,
   saveFavoriteLineup,
@@ -127,6 +128,17 @@ export async function extendContractAction(
 ) {
   const playerId = String(formData.get("playerId") ?? "");
   const result = await extendContract(playerId);
+  refreshLeaguePaths();
+  return result;
+}
+
+export async function executeTradeAction(
+  _: { ok: boolean; message: string },
+  formData: FormData,
+) {
+  const givePlayerId = String(formData.get("givePlayerId") ?? "");
+  const receivePlayerId = String(formData.get("receivePlayerId") ?? "");
+  const result = await executeTrade(givePlayerId, receivePlayerId);
   refreshLeaguePaths();
   return result;
 }

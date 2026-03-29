@@ -58,6 +58,16 @@ export default async function Home() {
             </div>
           </SectionCard>
 
+          <SectionCard title="League News" actionLabel="Trade center" actionHref="/trades">
+            <div className="grid gap-3">
+              {snapshot.newsFeed.map((item) => (
+                <article key={item} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-sm text-slate-200">
+                  {item}
+                </article>
+              ))}
+            </div>
+          </SectionCard>
+
           <SectionCard title="Roster Core" actionLabel="View roster" actionHref="/roster">
             <div className="grid gap-3 md:grid-cols-2">
               {snapshot.favoriteTeam.players.slice(0, 4).map((player) => (

@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import {
   extendContractAction,
+  executeTradeAction,
   openPackAction,
   resetLeagueAction,
   saveLineupAction,
@@ -233,6 +234,33 @@ export function ExtendContractButton({
         className="w-full rounded-2xl border border-sky-300/25 bg-sky-300/12 px-4 py-3 text-sm font-semibold text-sky-100 transition hover:bg-sky-300/20 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {pending ? "Negotiating..." : `Extend Contract (${cost} cr)`}
+      </button>
+      {state.message ? <p className={`text-xs ${state.ok ? "text-slate-400" : "text-rose-300"}`}>{state.message}</p> : null}
+    </form>
+  );
+}
+
+export function ExecuteTradeButton({
+  givePlayerId,
+  receivePlayerId,
+  label,
+}: {
+  givePlayerId: string;
+  receivePlayerId: string;
+  label: string;
+}) {
+  const [state, action, pending] = useActionState(executeTradeAction, initialState);
+
+  return (
+    <form action={action} className="space-y-2">
+      <input type="hidden" name="givePlayerId" value={givePlayerId} />
+      <input type="hidden" name="receivePlayerId" value={receivePlayerId} />
+      <button
+        type="submit"
+        disabled={pending}
+        className="w-full rounded-2xl border border-violet-300/25 bg-violet-300/12 px-4 py-3 text-sm font-semibold text-violet-100 transition hover:bg-violet-300/20 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {pending ? "Negotiating..." : label}
       </button>
       {state.message ? <p className={`text-xs ${state.ok ? "text-slate-400" : "text-rose-300"}`}>{state.message}</p> : null}
     </form>

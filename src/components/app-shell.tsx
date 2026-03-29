@@ -5,6 +5,7 @@ const navItems = [
   { href: "/roster", label: "Roster" },
   { href: "/lineup", label: "Lineup" },
   { href: "/market", label: "Market" },
+  { href: "/trades", label: "Trades" },
   { href: "/schedule", label: "Schedule" },
   { href: "/standings", label: "Standings" },
   { href: "/stats", label: "Stats" },
