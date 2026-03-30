@@ -89,7 +89,7 @@ export default async function MarketPage() {
                 <div className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3">
                   <p className="text-sm text-slate-300">
                     {snapshot.lastPackReveal.packType === "elite" ? t.common.eliteDrop : t.common.standardDrop} {t.common.openedOn}{" "}
-                    {new Date(snapshot.lastPackReveal.openedAt).toLocaleDateString("en-US", {
+                    {new Date(snapshot.lastPackReveal.openedAt).toLocaleDateString(locale === "zh" ? "zh-CN" : "en-US", {
                       month: "short",
                       day: "numeric",
                       year: "numeric",
