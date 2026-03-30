@@ -166,6 +166,24 @@ select {
     transform 550ms ease;
 }
 
+.court-ball-made {
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,0.12),
+    0 0 24px rgba(34,197,94,0.55);
+}
+
+.court-ball-miss {
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,0.12),
+    0 0 24px rgba(251,191,36,0.45);
+}
+
+.court-ball-turnover {
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,0.12),
+    0 0 24px rgba(244,63,94,0.55);
+}
+
 .court-half {
   position: relative;
   height: 50%;

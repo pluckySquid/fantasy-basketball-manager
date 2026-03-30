@@ -57,6 +57,8 @@ type BroadcastState = {
   timeouts: Record<TeamSide, number>;
   possession: TeamSide;
   hotPlayerId: string | null;
+  possessionClock: number;
+  shotOutcome: "made" | "turnover" | "miss" | null;
   quarterPlans: Array<{ home: number[]; away: number[] }>;
 };
 
@@ -193,6 +195,8 @@ function buildInitialState({ homeTeam, awayTeam, quarterLines, locale }: LiveMat
     },
     possession: Math.random() > 0.5 ? "home" : "away",
     hotPlayerId: null,
+    possessionClock: 24,
+    shotOutcome: null,
     quarterPlans: quarterLines.home.map((homePoints, index) => ({
       home: decomposeQuarterScore(homePoints),
       away: decomposeQuarterScore(quarterLines.away[index]),
@@ -411,6 +415,7 @@ function advanceBroadcast(
     },
     stamina: { ...previous.stamina },
     logs: [...previous.logs],
+    shotOutcome: null,
     quarterPlans: previous.quarterPlans.map((plan) => ({ home: [...plan.home], away: [...plan.away] })),
   };
 
@@ -426,14 +431,19 @@ function advanceBroadcast(
   const actingTeam = scoringSide === "home" ? props.homeTeam : props.awayTeam;
   const defendingTeam = scoringSide === "home" ? props.awayTeam : props.homeTeam;
   const scorer = chooseScorer(playerMap, state.onCourt[scoringSide], state.tactics[scoringSide]);
+  const shotMode = Math.random() < 0.14 ? "turnover" : Math.random() < 0.26 ? "miss" : "made";
 
   state.possession = scoringSide;
   state.hotPlayerId = scorer?.id ?? null;
+  state.possessionClock = 18 + ((state.playCount * 5) % 7);
+  state.shotOutcome = shotMode;
 
-  if (scoringSide === "home") {
-    state.homeScore += points;
-  } else {
-    state.awayScore += points;
+  if (shotMode === "made") {
+    if (scoringSide === "home") {
+      state.homeScore += points;
+    } else {
+      state.awayScore += points;
+    }
   }
 
   state.logs.push({
@@ -441,15 +451,24 @@ function advanceBroadcast(
     quarter: state.quarter,
     side: scoringSide,
     tone: "score",
-    text: createScoringText({
-      locale: props.locale,
-      team: actingTeam,
-      opponent: defendingTeam,
-      scorer,
-      points,
-      tactic: state.tactics[scoringSide],
-      quarter: state.quarter,
-    }),
+    text:
+      shotMode === "turnover"
+        ? props.locale === "zh"
+          ? `${quarterLabels[state.quarter - 1]}：${scorer?.name ?? actingTeam.abbreviation} 处理球失误，${defendingTeam.abbreviation} 成功破坏这次回合。`
+          : `${quarterLabels[state.quarter - 1]}: ${scorer?.name ?? actingTeam.abbreviation} coughs it up, and ${defendingTeam.abbreviation} force the turnover.`
+        : shotMode === "miss"
+          ? props.locale === "zh"
+            ? `${quarterLabels[state.quarter - 1]}：${scorer?.name ?? actingTeam.abbreviation} 出手偏出，${defendingTeam.abbreviation} 顶住了这次防守。`
+            : `${quarterLabels[state.quarter - 1]}: ${scorer?.name ?? actingTeam.abbreviation} misses the look, and ${defendingTeam.abbreviation} survive the possession.`
+          : createScoringText({
+              locale: props.locale,
+              team: actingTeam,
+              opponent: defendingTeam,
+              scorer,
+              points,
+              tactic: state.tactics[scoringSide],
+              quarter: state.quarter,
+            }),
   });
 
   state.clockSeconds = Math.max(0, state.clockSeconds - (18 + ((state.playCount * 7) % 17)));
@@ -479,11 +498,13 @@ function advanceBroadcast(
       state.running = false;
       state.completed = true;
       state.clockSeconds = 0;
+      state.possessionClock = 0;
       return state;
     }
 
     state.quarter += 1;
     state.clockSeconds = 12 * 60;
+    state.possessionClock = 24;
     state.logs.push({
       id: `quarter-${state.quarter}-start-${state.playCount}`,
       quarter: state.quarter,
@@ -675,6 +696,22 @@ export function LiveMatchBroadcast(props: LiveMatchBroadcastProps) {
 
   const currentLeader =
     state.homeScore === state.awayScore ? null : state.homeScore > state.awayScore ? props.homeTeam.abbreviation : props.awayTeam.abbreviation;
+  const shotOutcomeLabel =
+    state.shotOutcome === "made"
+      ? props.locale === "zh"
+        ? "命中"
+        : "Made"
+      : state.shotOutcome === "miss"
+        ? props.locale === "zh"
+          ? "打铁"
+          : "Miss"
+        : state.shotOutcome === "turnover"
+          ? props.locale === "zh"
+            ? "失误"
+            : "Turnover"
+          : props.locale === "zh"
+            ? "推进中"
+            : "In action";
 
   return (
     <div className="grid gap-6">
@@ -698,6 +735,14 @@ export function LiveMatchBroadcast(props: LiveMatchBroadcastProps) {
             <p className="text-sm text-slate-300">
               {quarterLabels[state.quarter - 1] ?? "FT"} • {formatClock(state.clockSeconds)} • {currentLeader ? `${currentLeader} ${props.locale === "zh" ? "占优" : "have the edge"}` : props.locale === "zh" ? "比分胶着" : "Game tied"}
             </p>
+            <div className="mt-2 flex items-center gap-3 text-xs text-slate-300">
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+                {props.locale === "zh" ? "24秒" : "Shot clock"} {state.possessionClock}
+              </span>
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+                {props.locale === "zh" ? "结果" : "Result"} {shotOutcomeLabel}
+              </span>
+            </div>
           </div>
 
           <div className="grid gap-3 md:grid-cols-3">
@@ -735,7 +780,7 @@ export function LiveMatchBroadcast(props: LiveMatchBroadcastProps) {
                   ? `${state.possession === "home" ? props.homeTeam.abbreviation : props.awayTeam.abbreviation} 持球推进`
                   : `${state.possession === "home" ? props.homeTeam.abbreviation : props.awayTeam.abbreviation} bringing it up`}
               </div>
-              <div className="court-ball" style={ballPosition(ballHandler, state.playCount)} />
+              <div className={`court-ball ${state.shotOutcome ? `court-ball-${state.shotOutcome}` : ""}`} style={ballPosition(ballHandler, state.playCount)} />
               <div className="court-half court-away">
                 <div className="court-rim court-rim-away" />
                 <div className="court-key court-key-away" />
