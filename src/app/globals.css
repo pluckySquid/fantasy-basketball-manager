@@ -69,6 +69,17 @@ select {
   }
 }
 
+@keyframes liveFeedIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .card-reveal {
   animation: holoPulse 3.8s ease-in-out infinite;
 }
@@ -82,4 +93,28 @@ select {
 .match-summary-banner {
   background: linear-gradient(90deg, rgba(245, 158, 11, 0.12), rgba(34, 211, 238, 0.08), transparent);
   border: 1px solid rgba(255,255,255,0.08);
+}
+
+.live-center-shell {
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    0 18px 38px rgba(2, 6, 23, 0.22);
+}
+
+.live-center-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+  transform: translateX(-100%);
+  animation: holoPulse 5.6s ease-in-out infinite;
+}
+
+.live-event {
+  opacity: 0;
+  animation: liveFeedIn 420ms ease-out forwards;
 }
