@@ -291,14 +291,14 @@ export function PlayerShowcaseCard({
           </span>
         </div>
       </div>
-      <div className="mt-4 flex items-start justify-between gap-3">
-        <div>
-          <h3 className="mt-2 text-xl font-semibold text-white">{fullName}</h3>
+      <div className="mt-4 grid min-h-[88px] grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+        <div className="min-w-0">
+          <h3 className="mt-2 text-xl font-semibold leading-tight text-white">{fullName}</h3>
           <p className="mt-1 text-sm text-slate-300">
             {translatedArchetype} | {t.age} {player.age}
           </p>
         </div>
-        <div className="rounded-[18px] border border-white/10 bg-slate-950/60 px-4 py-2 text-right">
+        <div className="self-start rounded-[18px] border border-white/10 bg-slate-950/60 px-4 py-2 text-right">
           <p className="text-[10px] uppercase tracking-[0.22em] text-slate-400">{t.overall}</p>
           <p className="mt-1 text-2xl font-semibold text-white">{player.overall}</p>
         </div>
