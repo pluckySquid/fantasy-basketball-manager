@@ -1,4 +1,4 @@
-import { AppShell } from "@/components/app-shell";
+﻿import { AppShell } from "@/components/app-shell";
 import { ExecuteTradeButton } from "@/components/action-forms";
 import { MetricCard, PlayerShowcaseCard, SectionCard } from "@/components/ui";
 import { getGameSnapshot } from "@/lib/game-state";
@@ -26,6 +26,7 @@ export default async function TradesPage() {
           proposalCaption: "这些方案会根据阵容价值和工资帽规则实时生成。",
           valueDelta: "价值差",
           tradeFor: "交易",
+          swapWord: "换",
           rankFitFallback: "化学反应调整中",
         }
       : {
@@ -34,6 +35,7 @@ export default async function TradesPage() {
           proposalCaption: "Fresh ideas built from roster value and cap rules.",
           valueDelta: "Value delta",
           tradeFor: "Trade",
+          swapWord: "for",
           rankFitFallback: "Lineup fit still evolving",
         };
 
@@ -84,7 +86,7 @@ export default async function TradesPage() {
                     <ExecuteTradeButton
                       givePlayerId={proposal.givePlayer.id}
                       receivePlayerId={proposal.receivePlayer.id}
-                      label={`${labels.tradeFor} ${proposal.givePlayer.lastName} ${locale === "zh" ? "换" : "for"} ${proposal.receivePlayer.lastName}`}
+                      label={`${labels.tradeFor} ${proposal.givePlayer.lastName} ${labels.swapWord} ${proposal.receivePlayer.lastName}`}
                     />
                   </div>
                 </div>

@@ -1,4 +1,4 @@
-import { AppShell } from "@/components/app-shell";
+﻿import { AppShell } from "@/components/app-shell";
 import { MetricCard, SectionCard } from "@/components/ui";
 import { getGameSnapshot } from "@/lib/game-state";
 import { buildNav, copy, getLocale } from "@/lib/i18n";
@@ -11,6 +11,7 @@ export default async function StandingsPage() {
   const scoringLeader = snapshot.scoringLeaders[0];
   const assistLeader = snapshot.assistLeaders[0];
   const reboundLeader = snapshot.reboundLeaders[0];
+
   const labels =
     locale === "zh"
       ? {
@@ -27,6 +28,9 @@ export default async function StandingsPage() {
           rank: "排名",
           team: "球队",
           record: "战绩",
+          pf: "得分",
+          pa: "失分",
+          diff: "净胜分",
         }
       : {
           noGames: "No games yet",
@@ -42,6 +46,9 @@ export default async function StandingsPage() {
           rank: "Rank",
           team: "Team",
           record: "Record",
+          pf: "PF",
+          pa: "PA",
+          diff: "Diff",
         };
 
   return (
@@ -133,9 +140,9 @@ export default async function StandingsPage() {
                 <th className="px-4 py-3">{labels.rank}</th>
                 <th className="px-4 py-3">{labels.team}</th>
                 <th className="px-4 py-3">{labels.record}</th>
-                    <th className="px-4 py-3">{locale === "zh" ? "得分" : "PF"}</th>
-                    <th className="px-4 py-3">{locale === "zh" ? "失分" : "PA"}</th>
-                    <th className="px-4 py-3">{locale === "zh" ? "净胜分" : "Diff"}</th>
+                <th className="px-4 py-3">{labels.pf}</th>
+                <th className="px-4 py-3">{labels.pa}</th>
+                <th className="px-4 py-3">{labels.diff}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10 bg-slate-950/60 text-slate-100">

@@ -1,4 +1,4 @@
-import { AppShell } from "@/components/app-shell";
+﻿import { AppShell } from "@/components/app-shell";
 import { SectionCard } from "@/components/ui";
 import { getGameSnapshot } from "@/lib/game-state";
 import { buildNav, copy, getLocale } from "@/lib/i18n";
@@ -8,6 +8,7 @@ export default async function StatsPage() {
   const t = copy[locale];
   const snapshot = await getGameSnapshot();
   type LeaderRow = (typeof snapshot.scoringLeaders)[number] & { mvpScore?: number };
+
   const labels =
     locale === "zh"
       ? {
@@ -175,7 +176,7 @@ export default async function StatsPage() {
                     {player.firstName} {player.lastName}
                   </p>
                   <p className="mt-1 text-sm text-slate-300">
-                    {player.contractYears}{locale === "zh" ? "年剩余" : "Y left"} | {labels.extension} {player.extensionCost} cr
+                    {player.contractYears}{labels.yearsLeft} | {labels.extension} {player.extensionCost} cr
                   </p>
                 </div>
               ))

@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+﻿import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { ExtendContractButton, TrainPlayerForm } from "@/components/action-forms";
 import { PlayerPortrait, RatingBar, SectionCard } from "@/components/ui";
@@ -19,14 +19,28 @@ export default async function PlayerDetailPage({
     notFound();
   }
 
+  const subtitle =
+    locale === "zh"
+      ? `${player.team.name} 的详细球员卡页面，可在这里查看定位、薪资和能力构成。`
+      : `Detailed player card for ${player.team.name}. Use this page to inspect role fit, salary, and attribute profile.`;
+
+  const cardNotes =
+    locale === "zh"
+      ? [
+          `${player.firstName} 在这套 MVP 系统里被定义为${translateArchetype(player.archetype, locale)}，并拥有 ${translateRarity(player.rarity, locale)} 稀有度球员卡。`,
+          "训练每次只会强化一项核心能力，并逐步把总评推向这名球员的潜力上限。",
+          "士气高的球员通常更保值，也会在赛季模拟中贡献得更稳定。",
+        ]
+      : [
+          `${player.firstName} is tagged as a ${player.archetype.toLowerCase()} and carries ${player.rarity.toLowerCase()} card status in this MVP.`,
+          "Training raises one key attribute at a time and can push the overall rating toward the player's potential cap.",
+          "High-morale players hold their value better and contribute more consistently during season simulations.",
+        ];
+
   return (
     <AppShell
       title={`${player.firstName} ${player.lastName}`}
-      subtitle={
-        locale === "zh"
-          ? `${player.team.name} 的详细球员卡页面，可在这里查看定位、薪资和能力构成。`
-          : `Detailed player card for ${player.team.name}. Use this page to inspect role fit, salary, and attribute profile.`
-      }
+      subtitle={subtitle}
       locale={locale}
       nav={buildNav(locale)}
       languageLabels={t.language}
@@ -97,21 +111,9 @@ export default async function PlayerDetailPage({
       <div className="mt-5 grid gap-5 lg:grid-cols-[1.2fr_1fr]">
         <SectionCard title={t.player.notes}>
           <div className="space-y-3 text-sm text-slate-300">
-            <p>
-              {locale === "zh"
-                ? `${player.firstName} 在这套 MVP 系统里被定义为${player.archetype}，并拥有 ${player.rarity} 稀有度球员卡。`
-                : `${player.firstName} is tagged as a ${player.archetype.toLowerCase()} and carries ${player.rarity.toLowerCase()} card status in this MVP.`}
-            </p>
-            <p>
-              {locale === "zh"
-                ? "训练每次只会强化一项核心能力，并逐步把总评推向这名球员的潜力上限。"
-                : "Training raises one key attribute at a time and can push the overall rating toward the player's potential cap."}
-            </p>
-            <p>
-              {locale === "zh"
-                ? "士气高的球员通常更保值，也会在赛季模拟中贡献得更稳定。"
-                : "High-morale players hold their value better and contribute more consistently during season simulations."}
-            </p>
+            {cardNotes.map((note) => (
+              <p key={note}>{note}</p>
+            ))}
           </div>
         </SectionCard>
 
@@ -121,10 +123,7 @@ export default async function PlayerDetailPage({
               playerId={player.id}
               labels={{
                 focus: locale === "zh" ? "训练方向" : "Training focus",
-                options:
-                  locale === "zh"
-                    ? ["得分训练", "组织训练", "篮板训练", "防守训练", "体能训练"]
-                    : [],
+                options: locale === "zh" ? ["得分训练", "组织训练", "篮板训练", "防守训练", "体能训练"] : [],
                 idle: t.actions.training,
                 pending: t.actions.trainingLoading,
               }}
