@@ -1,4 +1,5 @@
-﻿import { AppShell } from "@/components/app-shell";
+﻿import Link from "next/link";
+import { AppShell } from "@/components/app-shell";
 import { LiveMatchCenter } from "@/components/live-match-center";
 import { SectionCard } from "@/components/ui";
 import { getGameSnapshot } from "@/lib/game-state";
@@ -103,9 +104,19 @@ export default async function SchedulePage() {
                         {match.played ? ` ${match.awayScore}` : ""} {locale === "zh" ? "对阵" : "at"} {match.homeTeam.abbreviation}
                         {match.played ? ` ${match.homeScore}` : ""}
                       </p>
-                      <p className="rounded-full border border-white/10 bg-slate-950/55 px-3 py-1 text-xs uppercase tracking-[0.2em] text-slate-400">
-                        {match.played ? t.schedule.final : t.schedule.upcoming}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        {match.played ? (
+                          <Link
+                            href={`/live/${match.id}`}
+                            className="rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-1 text-xs font-semibold text-amber-100 transition hover:bg-amber-300/18"
+                          >
+                            {locale === "zh" ? "进入直播" : "Open Live"}
+                          </Link>
+                        ) : null}
+                        <p className="rounded-full border border-white/10 bg-slate-950/55 px-3 py-1 text-xs uppercase tracking-[0.2em] text-slate-400">
+                          {match.played ? t.schedule.final : t.schedule.upcoming}
+                        </p>
+                      </div>
                     </div>
                     {match.played ? (
                       <div className="mt-3 grid gap-4 text-sm text-slate-300">
