@@ -14,7 +14,7 @@ import {
   trainPlayer,
   upgradeStaffDepartment,
 } from "@/lib/game-state";
-import { isLocale, setLocaleCookie } from "@/lib/i18n";
+import { getLocale, isLocale, setLocaleCookie, translateServerMessage } from "@/lib/i18n";
 
 function refreshLeaguePaths() {
   revalidatePath("/");
@@ -29,29 +29,33 @@ function refreshLeaguePaths() {
 
 export async function saveLineupAction(_: { ok: boolean; message: string }, formData: FormData) {
   const result = await saveFavoriteLineup(formData);
+  const locale = await getLocale();
   refreshLeaguePaths();
-  return result;
+  return { ...result, message: translateServerMessage(result.message, locale) };
 }
 
 export async function simulateRoundAction(previousState: { ok: boolean; message: string }) {
   void previousState;
   const result = await simulateNextRound();
+  const locale = await getLocale();
   refreshLeaguePaths();
-  return result;
+  return { ...result, message: translateServerMessage(result.message, locale) };
 }
 
 export async function startNextSeasonAction(previousState: { ok: boolean; message: string }) {
   void previousState;
   const result = await startNextSeason();
+  const locale = await getLocale();
   refreshLeaguePaths();
-  return result;
+  return { ...result, message: translateServerMessage(result.message, locale) };
 }
 
 export async function resetLeagueAction(previousState: { ok: boolean; message: string }) {
   void previousState;
   const result = await resetLeague();
+  const locale = await getLocale();
   refreshLeaguePaths();
-  return result;
+  return { ...result, message: translateServerMessage(result.message, locale) };
 }
 
 export async function upgradeStaffAction(
@@ -60,12 +64,14 @@ export async function upgradeStaffAction(
 ) {
   const department = String(formData.get("department") ?? "");
   if (department !== "training" && department !== "medical" && department !== "scouting") {
-    return { ok: false as const, message: "Unknown staff department." };
+    const locale = await getLocale();
+    return { ok: false as const, message: translateServerMessage("Unknown staff department.", locale) };
   }
 
   const result = await upgradeStaffDepartment(department);
+  const locale = await getLocale();
   refreshLeaguePaths();
-  return result;
+  return { ...result, message: translateServerMessage(result.message, locale) };
 }
 
 export async function signPlayerAction(
@@ -74,8 +80,9 @@ export async function signPlayerAction(
 ) {
   const playerId = String(formData.get("playerId") ?? "");
   const result = await signMarketPlayer(playerId);
+  const locale = await getLocale();
   refreshLeaguePaths();
-  return result;
+  return { ...result, message: translateServerMessage(result.message, locale) };
 }
 
 export async function sellPlayerAction(
@@ -84,8 +91,9 @@ export async function sellPlayerAction(
 ) {
   const playerId = String(formData.get("playerId") ?? "");
   const result = await sellRosterPlayer(playerId);
+  const locale = await getLocale();
   refreshLeaguePaths();
-  return result;
+  return { ...result, message: translateServerMessage(result.message, locale) };
 }
 
 export async function openPackAction(
@@ -94,12 +102,14 @@ export async function openPackAction(
 ) {
   const packType = String(formData.get("packType") ?? "");
   if (packType !== "standard" && packType !== "elite") {
-    return { ok: false as const, message: "Unknown pack type." };
+    const locale = await getLocale();
+    return { ok: false as const, message: translateServerMessage("Unknown pack type.", locale) };
   }
 
   const result = await openPack(packType);
+  const locale = await getLocale();
   refreshLeaguePaths();
-  return result;
+  return { ...result, message: translateServerMessage(result.message, locale) };
 }
 
 export async function trainPlayerAction(
@@ -115,12 +125,14 @@ export async function trainPlayerAction(
     focus !== "defense" &&
     focus !== "stamina"
   ) {
-    return { ok: false as const, message: "Unknown training focus." };
+    const locale = await getLocale();
+    return { ok: false as const, message: translateServerMessage("Unknown training focus.", locale) };
   }
 
   const result = await trainPlayer(playerId, focus);
+  const locale = await getLocale();
   refreshLeaguePaths();
-  return result;
+  return { ...result, message: translateServerMessage(result.message, locale) };
 }
 
 export async function extendContractAction(
@@ -129,8 +141,9 @@ export async function extendContractAction(
 ) {
   const playerId = String(formData.get("playerId") ?? "");
   const result = await extendContract(playerId);
+  const locale = await getLocale();
   refreshLeaguePaths();
-  return result;
+  return { ...result, message: translateServerMessage(result.message, locale) };
 }
 
 export async function executeTradeAction(
@@ -140,8 +153,9 @@ export async function executeTradeAction(
   const givePlayerId = String(formData.get("givePlayerId") ?? "");
   const receivePlayerId = String(formData.get("receivePlayerId") ?? "");
   const result = await executeTrade(givePlayerId, receivePlayerId);
+  const locale = await getLocale();
   refreshLeaguePaths();
-  return result;
+  return { ...result, message: translateServerMessage(result.message, locale) };
 }
 
 export async function setLanguageAction(

@@ -133,9 +133,9 @@ export default async function StandingsPage() {
                 <th className="px-4 py-3">{labels.rank}</th>
                 <th className="px-4 py-3">{labels.team}</th>
                 <th className="px-4 py-3">{labels.record}</th>
-                <th className="px-4 py-3">PF</th>
-                <th className="px-4 py-3">PA</th>
-                <th className="px-4 py-3">Diff</th>
+                    <th className="px-4 py-3">{locale === "zh" ? "得分" : "PF"}</th>
+                    <th className="px-4 py-3">{locale === "zh" ? "失分" : "PA"}</th>
+                    <th className="px-4 py-3">{locale === "zh" ? "净胜分" : "Diff"}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10 bg-slate-950/60 text-slate-100">

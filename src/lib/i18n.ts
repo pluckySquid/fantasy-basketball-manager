@@ -553,3 +553,64 @@ export function translateMatchSummary(summary: string | null, locale: Locale) {
   result = result.replace(/^([A-Z]{2,4}) stole a road win with a stronger late-game push\.$/, "$1 在比赛末段完成反扑，客场带走胜利。");
   return result;
 }
+
+export function translateServerMessage(message: string, locale: Locale) {
+  if (locale === "en") {
+    return message;
+  }
+
+  let result = message;
+  const replacements: Array<[RegExp | string, string]> = [
+    ["Lineup saved.", "阵容已保存。"],
+    ["The season is already complete.", "本赛季已经结束。"],
+    ["Finish the current season before rolling over.", "请先完成当前赛季，再进入下一赛季。"],
+    ["Unknown staff department.", "未知的员工部门。"],
+    ["Unknown pack type.", "未知的卡包类型。"],
+    ["Unknown training focus.", "未知的训练方向。"],
+    ["Unknown language.", "未知的语言选项。"],
+    ["That player is not on your roster.", "这名球员不在你的阵容中。"],
+    ["This player is already on a long-term deal.", "这名球员已经签下长期合同。"],
+    ["Trade target is no longer available.", "交易目标已经无法获取。"],
+    ["The other team rejected the value of this offer.", "对方球队认为这笔交易价值不合适。"],
+    ["That trade would push you over the salary limit.", "这笔交易会让你的薪资超限。"],
+    ["The other team cannot absorb this contract.", "对方球队无法接收这份合同。"],
+    ["That player is no longer on the market.", "这名球员已经不在市场上。"],
+    ["Your roster is full. Sell a player before signing another.", "你的阵容已满，请先出售球员再签新球员。"],
+    ["Your roster is full. Sell a player before opening a pack.", "你的阵容已满，请先出售球员再开卡包。"],
+    ["Keep at least 8 players so your lineup remains valid.", "请至少保留 8 名球员，确保阵容依然有效。"],
+    ["No more player packs are available in this build.", "当前版本已经没有更多可开启的球员卡包。"],
+    ["Every selected player must belong to your roster.", "所选球员必须全部来自你的阵容。"],
+    ["Each lineup slot must use a different player.", "每个阵容位置都必须使用不同的球员。"],
+  ];
+
+  for (const [pattern, replacement] of replacements) {
+    result = result.replace(pattern as never, replacement);
+  }
+
+  result = result.replace(/^Round (\d+) simulated\.$/, "第$1轮模拟完成。");
+  result = result.replace(/^(.+) is underway\.$/, "$1 已经开始。");
+  result = result.replace(/^Not enough credits\. (training|medical|scouting) upgrade costs (\d+)\.$/, "资金不足。$1 部门升级需要 $2 点资金。");
+  result = result.replace(/^Not enough credits\. Training costs (\d+)\.$/, "资金不足。训练需要 $1 点资金。");
+  result = result.replace(/^Not enough credits\. Extension costs (\d+)\.$/, "资金不足。续约需要 $1 点资金。");
+  result = result.replace(/^Not enough credits\. Signing costs (\d+)\.$/, "资金不足。签约需要 $1 点资金。");
+  result = result.replace(/^Not enough credits\. (standard|elite) pack costs (\d+)\.$/, "资金不足。$1 卡包需要 $2 点资金。");
+  result = result.replace(/^Not enough cap room\. You need (\d+) more payroll room\.$/, "薪资空间不足。你还需要额外释放 $1 的薪资空间。");
+  result = result.replace(/^(.+) improved (scoring|playmaking|rebounding|defense|stamina)\.$/, "$1 的 $2 能力获得提升。");
+  result = result.replace(/^(.+) signed a one-year extension\.$/, "$1 完成了一年续约。");
+  result = result.replace(/^([A-Z]{2,4}) accepted\. (.+) joined your club\.$/, "$1 接受了报价。$2 加入了你的球队。");
+  result = result.replace(/^(.+) joined your club\.$/, "$1 加入了你的球队。");
+  result = result.replace(/^(.+) was sold for (\d+) credits\.$/, "$1 已出售，获得 $2 点资金。");
+  result = result.replace(/^(.+) joined your roster from a (standard|elite) pack\.$/, "$1 已从 $2 卡包加入你的阵容。");
+  result = result.replace(/^Your (PG|SG|SF|PF|C) starter must play (PG|SG|SF|PF|C)\.$/, "你的 $1 首发必须由 $2 位置的球员担任。");
+  result = result.replace(/\btraining\b/g, "训练");
+  result = result.replace(/\bmedical\b/g, "医疗");
+  result = result.replace(/\bscouting\b/g, "球探");
+  result = result.replace(/\bscoring\b/g, "得分");
+  result = result.replace(/\bplaymaking\b/g, "组织");
+  result = result.replace(/\brebounding\b/g, "篮板");
+  result = result.replace(/\bdefense\b/g, "防守");
+  result = result.replace(/\bstamina\b/g, "体能");
+  result = result.replace(/\bstandard\b/g, "普通");
+  result = result.replace(/\belite\b/g, "高级");
+  return result;
+}
