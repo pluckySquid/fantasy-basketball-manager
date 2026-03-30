@@ -3,6 +3,10 @@
 :root {
   --background: #08111f;
   --foreground: #eef2ff;
+  --panel: rgba(2, 6, 23, 0.82);
+  --panel-strong: rgba(15, 23, 42, 0.92);
+  --accent-gold: #f6c94b;
+  --accent-cyan: #55d6ff;
 }
 
 @theme inline {
@@ -15,10 +19,24 @@
 body {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top, rgba(245, 158, 11, 0.16), transparent 28%),
+    radial-gradient(circle at top, rgba(245, 158, 11, 0.18), transparent 22%),
+    radial-gradient(circle at 85% 10%, rgba(34, 211, 238, 0.1), transparent 20%),
     linear-gradient(180deg, #09111d 0%, #101b31 45%, #09111d 100%);
   color: var(--foreground);
   font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(circle at center, black, transparent 85%);
+  opacity: 0.22;
 }
 
 a,
@@ -53,4 +71,15 @@ select {
 
 .card-reveal {
   animation: holoPulse 3.8s ease-in-out infinite;
+}
+
+.score-pill {
+  border: 1px solid rgba(255,255,255,0.08);
+  background: linear-gradient(180deg, rgba(15,23,42,0.88), rgba(2,6,23,0.9));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+.match-summary-banner {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.12), rgba(34, 211, 238, 0.08), transparent);
+  border: 1px solid rgba(255,255,255,0.08);
 }

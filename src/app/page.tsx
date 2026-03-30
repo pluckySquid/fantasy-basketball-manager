@@ -78,6 +78,7 @@ export default async function Home() {
         ? `下一轮：第${snapshot.pendingRound}轮`
         : `Round ${snapshot.pendingRound} is next`;
   const staffDepartments = getStaffDepartments(snapshot.favoriteTeam);
+  const headlinePlayer = snapshot.favoriteTeam.players[0];
 
   return (
     <AppShell
@@ -90,6 +91,51 @@ export default async function Home() {
     >
       <div className="grid gap-5 xl:grid-cols-[1.5fr_1fr]">
         <div className="grid gap-5">
+          <section className="relative overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(130deg,rgba(15,23,42,0.94),rgba(30,41,59,0.82),rgba(8,47,73,0.76))] p-6 shadow-2xl shadow-slate-950/30">
+            <div className="pointer-events-none absolute -right-16 top-0 h-48 w-48 rounded-full bg-cyan-300/10 blur-3xl" />
+            <div className="pointer-events-none absolute left-10 top-0 h-28 w-56 rounded-full bg-amber-300/12 blur-3xl" />
+            <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
+              <div className="space-y-3">
+                <p className="text-xs uppercase tracking-[0.35em] text-amber-300">
+                  {locale === "zh" ? "赛季指挥室" : "Season Command"}
+                </p>
+                <h2 className="text-3xl font-semibold text-white sm:text-4xl">
+                  {locale === "zh"
+                    ? `${snapshot.favoriteTeam.name} 冲冠进度`
+                    : `${snapshot.favoriteTeam.name} title push`}
+                </h2>
+                <p className="max-w-2xl text-sm text-slate-300 sm:text-base">
+                  {locale === "zh"
+                    ? "把主力、薪资、员工和交易节奏捏合成一个真正像老派网页经理游戏的赛季循环。"
+                    : "Shape your starters, payroll, staff, and trade timing into a season loop that feels like a classic browser manager."}
+                </p>
+                <div className="flex flex-wrap gap-3 text-sm text-slate-200">
+                  <div className="score-pill rounded-full px-4 py-2">
+                    {locale === "zh" ? "当前战绩" : "Current record"}: {record}
+                  </div>
+                  <div className="score-pill rounded-full px-4 py-2">
+                    {locale === "zh" ? "下一目标" : "Next target"}: {nextRoundLabel}
+                  </div>
+                  <div className="score-pill rounded-full px-4 py-2">
+                    {locale === "zh" ? "核心球星" : "Franchise star"}: {headlinePlayer.firstName} {headlinePlayer.lastName}
+                  </div>
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                {[
+                  { label: locale === "zh" ? "战力指数" : "Power index", value: snapshot.favoriteTeamStrength, tone: "text-cyan-100 border-cyan-300/20 bg-cyan-300/10" },
+                  { label: locale === "zh" ? "化学反应" : "Chemistry", value: snapshot.favoriteChemistry.score, tone: "text-emerald-100 border-emerald-300/20 bg-emerald-300/10" },
+                  { label: locale === "zh" ? "薪资余量" : "Cap room", value: `${snapshot.favoriteCapRoom >= 0 ? "+" : ""}$${snapshot.favoriteCapRoom.toLocaleString()}`, tone: "text-amber-100 border-amber-300/20 bg-amber-300/10" },
+                ].map((chip) => (
+                  <div key={chip.label} className={`rounded-[22px] border px-4 py-4 ${chip.tone}`}>
+                    <p className="text-[11px] uppercase tracking-[0.24em]">{chip.label}</p>
+                    <p className="mt-2 text-2xl font-semibold text-white">{chip.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
           <section className="grid gap-4 md:grid-cols-3">
             <MetricCard label={t.home.record} value={record} caption={t.common.recordCaption} />
             <MetricCard label={t.home.strength} value={String(snapshot.favoriteTeamStrength)} caption={t.common.strengthCaption} />
@@ -120,14 +166,19 @@ export default async function Home() {
                 <p className="text-sm text-slate-300">{t.home.noGames}</p>
               ) : (
                 snapshot.recentMatches.map((match) => (
-                  <article key={match.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <article key={match.id} className="overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.7),rgba(2,6,23,0.78))] p-4">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <p className="font-medium text-white">
                         {locale === "zh"
                           ? `第${match.round}轮：${match.awayTeam.abbreviation} ${match.awayScore} 对阵 ${match.homeTeam.abbreviation} ${match.homeScore}`
                           : `Round ${match.round}: ${match.awayTeam.abbreviation} ${match.awayScore} at ${match.homeTeam.abbreviation} ${match.homeScore}`}
                       </p>
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{translateMatchSummary(match.summary, locale)}</p>
+                      <p className="rounded-full border border-white/10 bg-slate-950/55 px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-slate-300">
+                        {locale === "zh" ? "赛后简报" : "Postgame"}
+                      </p>
+                    </div>
+                    <div className="match-summary-banner mt-3 rounded-2xl px-4 py-3 text-sm text-slate-200">
+                      {translateMatchSummary(match.summary, locale)}
                     </div>
                     <div className="mt-3 grid gap-2 text-sm text-slate-300 sm:grid-cols-2">
                       <p>{match.homeTopPerformer}</p>

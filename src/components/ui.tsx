@@ -187,7 +187,8 @@ export function MetricCard({
   caption: string;
 }) {
   return (
-    <article className="rounded-[24px] border border-white/10 bg-slate-950/75 p-5 shadow-lg shadow-slate-950/20">
+    <article className="relative overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(2,6,23,0.92),rgba(15,23,42,0.84))] p-5 shadow-lg shadow-slate-950/20">
+      <div className="pointer-events-none absolute inset-x-6 top-0 h-16 rounded-full bg-white/6 blur-2xl" />
       <p className="text-xs uppercase tracking-[0.25em] text-slate-400">{label}</p>
       <p className="mt-3 text-3xl font-semibold text-white">{value}</p>
       <p className="mt-2 text-sm text-slate-300">{caption}</p>
@@ -207,7 +208,8 @@ export function SectionCard({
   actionHref?: string;
 }) {
   return (
-    <section className="rounded-[28px] border border-white/10 bg-slate-950/75 p-6 shadow-lg shadow-slate-950/20">
+    <section className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(2,6,23,0.9),rgba(15,23,42,0.84))] p-6 shadow-lg shadow-slate-950/20">
+      <div className="pointer-events-none absolute left-6 right-6 top-0 h-20 rounded-full bg-white/5 blur-3xl" />
       <div className="mb-4 flex items-center justify-between gap-4">
         <h2 className="text-xl font-semibold text-white">{title}</h2>
         {actionLabel && actionHref ? (
@@ -229,7 +231,10 @@ export function RatingBar({ label, value }: { label: string; value: number }) {
         <span className="text-slate-200">{value}</span>
       </div>
       <div className="h-2 rounded-full bg-white/10">
-        <div className="h-2 rounded-full bg-amber-300" style={{ width: `${value}%` }} />
+        <div
+          className="h-2 rounded-full bg-[linear-gradient(90deg,rgba(250,204,21,0.95),rgba(251,191,36,0.84),rgba(34,211,238,0.7))]"
+          style={{ width: `${value}%` }}
+        />
       </div>
     </div>
   );
@@ -270,20 +275,32 @@ export function PlayerShowcaseCard({
   return (
     <Link
       href={href}
-      className={`group relative overflow-hidden rounded-[28px] border bg-[linear-gradient(160deg,var(--tw-gradient-stops))] p-5 shadow-lg shadow-slate-950/20 transition hover:-translate-y-1 hover:border-amber-300/40 ${rarityStyles(player.rarity)} ${cardFrameStyles(player.rarity)}`}
+      className={`group relative overflow-hidden rounded-[30px] border bg-[linear-gradient(160deg,var(--tw-gradient-stops))] p-5 shadow-[0_22px_60px_rgba(2,6,23,0.35)] transition duration-200 hover:-translate-y-1.5 hover:border-amber-300/40 ${rarityStyles(player.rarity)} ${cardFrameStyles(player.rarity)}`}
     >
       <div className="pointer-events-none absolute inset-x-6 top-3 h-20 rounded-full bg-white/8 blur-3xl" />
-      <PlayerPortrait name={fullName} rarity={player.rarity} className="h-48 w-full" />
+      <div className="pointer-events-none absolute inset-x-10 bottom-10 h-24 rounded-full bg-amber-300/10 blur-3xl transition group-hover:bg-cyan-300/10" />
+      <div className="relative overflow-hidden rounded-[26px] border border-white/10 bg-slate-950/35 p-3">
+        <div className="absolute inset-x-0 top-0 h-14 bg-[linear-gradient(180deg,rgba(255,255,255,0.14),transparent)]" />
+        <PlayerPortrait name={fullName} rarity={player.rarity} className="h-56 w-full" />
+        <div className="absolute left-4 top-4 flex gap-2">
+          <span className="rounded-full border border-black/10 bg-slate-950/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-100">
+            {player.position}
+          </span>
+          <span className={`rounded-full border px-3 py-1 text-[10px] font-semibold tracking-[0.08em] whitespace-nowrap ${tier.styles}`}>
+            {tier.label}
+          </span>
+        </div>
+      </div>
       <div className="mt-4 flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.25em] text-slate-400">{player.position}</p>
           <h3 className="mt-2 text-xl font-semibold text-white">{fullName}</h3>
           <p className="mt-1 text-sm text-slate-300">
             {translatedArchetype} | {t.age} {player.age}
           </p>
         </div>
-        <div className={`rounded-full border px-3 py-1 text-xs font-semibold tracking-[0.08em] whitespace-nowrap ${tier.styles}`}>
-          {tier.label}
+        <div className="rounded-[18px] border border-white/10 bg-slate-950/60 px-4 py-2 text-right">
+          <p className="text-[10px] uppercase tracking-[0.22em] text-slate-400">{t.overall}</p>
+          <p className="mt-1 text-2xl font-semibold text-white">{player.overall}</p>
         </div>
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs tracking-[0.08em] text-slate-300">
@@ -293,11 +310,7 @@ export function PlayerShowcaseCard({
           {player.contractYears}{t.yearsDeal}
         </span>
       </div>
-      <div className="mt-5 grid grid-cols-3 gap-3">
-        <div className="rounded-2xl bg-slate-950/70 p-3">
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t.overall}</p>
-          <p className="mt-1 text-3xl font-semibold text-white">{player.overall}</p>
-        </div>
+      <div className="mt-5 grid grid-cols-2 gap-3">
         <div className="rounded-2xl bg-slate-950/70 p-3">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t.salary}</p>
           <p className="mt-2 text-lg font-semibold text-white">${player.salary.toLocaleString()}</p>
