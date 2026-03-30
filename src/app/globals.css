@@ -133,6 +133,39 @@ select {
     inset 0 0 0 1px rgba(255,255,255,0.02);
 }
 
+.court-possession-tag {
+  position: absolute;
+  right: 18px;
+  top: 18px;
+  z-index: 3;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(2,6,23,0.58);
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.86);
+  backdrop-filter: blur(10px);
+}
+
+.court-ball {
+  position: absolute;
+  z-index: 4;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 35% 35%, #fef3c7, #f59e0b 45%, #b45309 100%);
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,0.12),
+    0 8px 16px rgba(0,0,0,0.3);
+  transition:
+    left 550ms ease,
+    top 550ms ease,
+    transform 550ms ease;
+}
+
 .court-half {
   position: relative;
   height: 50%;
@@ -210,13 +243,17 @@ select {
   position: absolute;
   z-index: 2;
   width: 92px;
-  transform: translate(-50%, -50%);
   border-radius: 20px;
   border: 1px solid rgba(255,255,255,0.14);
   padding: 8px 10px;
   text-align: center;
   backdrop-filter: blur(10px);
   box-shadow: 0 12px 24px rgba(2,6,23,0.24);
+  transition:
+    left 750ms ease,
+    top 750ms ease,
+    transform 750ms ease,
+    box-shadow 220ms ease;
 }
 
 .court-player-home {
