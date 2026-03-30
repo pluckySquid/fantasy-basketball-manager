@@ -118,3 +118,142 @@ select {
   opacity: 0;
   animation: liveFeedIn 420ms ease-out forwards;
 }
+
+.court-shell {
+  position: relative;
+  overflow: hidden;
+  min-height: 520px;
+  border-radius: 28px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background:
+    radial-gradient(circle at center, rgba(255,255,255,0.06), transparent 44%),
+    linear-gradient(180deg, rgba(6,78,59,0.95), rgba(5,46,22,0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    inset 0 0 0 1px rgba(255,255,255,0.02);
+}
+
+.court-half {
+  position: relative;
+  height: 50%;
+}
+
+.court-away {
+  border-bottom: 2px solid rgba(255,255,255,0.12);
+}
+
+.court-home {
+  transform: rotate(180deg);
+}
+
+.court-midline {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 50%;
+  height: 2px;
+  background: rgba(255,255,255,0.16);
+  transform: translateY(-1px);
+}
+
+.court-center-circle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 96px;
+  height: 96px;
+  border: 2px solid rgba(255,255,255,0.16);
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+}
+
+.court-key {
+  position: absolute;
+  left: 50%;
+  width: 34%;
+  height: 36%;
+  border: 2px solid rgba(255,255,255,0.16);
+  transform: translateX(-50%);
+}
+
+.court-key-away {
+  top: 0;
+  border-top: 0;
+  border-radius: 0 0 24px 24px;
+}
+
+.court-key-home {
+  bottom: 0;
+  border-top: 0;
+  border-radius: 0 0 24px 24px;
+}
+
+.court-rim {
+  position: absolute;
+  left: 50%;
+  width: 72px;
+  height: 72px;
+  border: 2px solid rgba(255,255,255,0.18);
+  border-radius: 999px;
+  transform: translateX(-50%);
+}
+
+.court-rim-away {
+  top: 10%;
+}
+
+.court-rim-home {
+  bottom: 10%;
+}
+
+.court-player {
+  position: absolute;
+  z-index: 2;
+  width: 92px;
+  transform: translate(-50%, -50%);
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.14);
+  padding: 8px 10px;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 24px rgba(2,6,23,0.24);
+}
+
+.court-player-home {
+  background: linear-gradient(180deg, rgba(245,158,11,0.28), rgba(30,41,59,0.88));
+}
+
+.court-player-away {
+  background: linear-gradient(180deg, rgba(34,211,238,0.24), rgba(30,41,59,0.88));
+}
+
+.court-player-active {
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.08),
+    0 0 24px rgba(251,191,36,0.3);
+}
+
+.court-player-hot {
+  animation: holoPulse 2.8s ease-in-out infinite;
+}
+
+.court-player-badge {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.8);
+}
+
+.court-player-name {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.1;
+}
+
+.court-player-stamina {
+  margin-top: 4px;
+  font-size: 10px;
+  color: rgba(255,255,255,0.72);
+}

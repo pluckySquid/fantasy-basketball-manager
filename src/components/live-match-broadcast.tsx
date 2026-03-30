@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { startTransition, useEffect, useEffectEvent, useMemo, useState } from "react";
 import type { Locale } from "@/lib/i18n";
@@ -55,6 +55,8 @@ type BroadcastState = {
   tactics: Record<TeamSide, Tactic>;
   boosts: Record<TeamSide, number>;
   timeouts: Record<TeamSide, number>;
+  possession: TeamSide;
+  hotPlayerId: string | null;
   quarterPlans: Array<{ home: number[]; away: number[] }>;
 };
 
@@ -67,6 +69,13 @@ type LiveMatchBroadcastProps = {
 };
 
 const quarterLabels = ["Q1", "Q2", "Q3", "Q4"];
+const courtPositions: Record<string, { left: string; top: string }> = {
+  PG: { left: "14%", top: "72%" },
+  SG: { left: "28%", top: "30%" },
+  SF: { left: "40%", top: "57%" },
+  PF: { left: "64%", top: "32%" },
+  C: { left: "76%", top: "60%" },
+};
 
 function decomposeQuarterScore(total: number) {
   const chunks: number[] = [];
@@ -105,6 +114,17 @@ function tacticLabel(locale: Locale, tactic: Tactic) {
   return "Balanced";
 }
 
+function sideLabel(locale: Locale, side: TeamSide) {
+  if (locale === "zh") {
+    return side === "home" ? "主队" : "客队";
+  }
+  return side === "home" ? "Home" : "Away";
+}
+
+function shortName(name: string) {
+  return name.split(" ").slice(-1)[0] ?? name;
+}
+
 function buildInitialState({ homeTeam, awayTeam, quarterLines, locale }: LiveMatchBroadcastProps): BroadcastState {
   const stamina = Object.fromEntries(
     [...homeTeam.players, ...awayTeam.players].map((player) => [player.id, Math.min(100, player.stamina)]),
@@ -125,8 +145,8 @@ function buildInitialState({ homeTeam, awayTeam, quarterLines, locale }: LiveMat
         tone: "control",
         text:
           locale === "zh"
-            ? `${awayTeam.abbreviation} 与 ${homeTeam.abbreviation} 的比赛开始，直播系统已接入。`
-            : `${awayTeam.abbreviation} and ${homeTeam.abbreviation} are underway. Live control is online.`,
+            ? `${awayTeam.abbreviation} 对阵 ${homeTeam.abbreviation} 的直播开始，双方首发已经登场。`
+            : `${awayTeam.abbreviation} at ${homeTeam.abbreviation} is live. Both starting fives are on the floor.`,
       },
     ],
     onCourt: {
@@ -150,6 +170,8 @@ function buildInitialState({ homeTeam, awayTeam, quarterLines, locale }: LiveMat
       home: 3,
       away: 3,
     },
+    possession: Math.random() > 0.5 ? "home" : "away",
+    hotPlayerId: null,
     quarterPlans: quarterLines.home.map((homePoints, index) => ({
       home: decomposeQuarterScore(homePoints),
       away: decomposeQuarterScore(quarterLines.away[index]),
@@ -210,7 +232,6 @@ function chooseTeamForPlay(state: BroadcastState, quarterPlan: { home: number[];
 
   return Math.random() * (homeWeight + awayWeight) <= homeWeight ? "home" : "away";
 }
-
 function maybeAutoSubstitute(
   state: BroadcastState,
   side: TeamSide,
@@ -256,9 +277,51 @@ function maybeAutoSubstitute(
       tone: "sub",
       text:
         locale === "zh"
-          ? `${side === "home" ? "主队" : "客队"}主动换人：${reservePlayer.name} 上场，${tiredPlayer.name} 下场休息。`
-          : `${side === "home" ? "Home" : "Away"} auto-sub: ${reservePlayer.name} checks in for ${tiredPlayer.name}.`,
+          ? `${sideLabel(locale, side)}自动换人：${reservePlayer.name} 上场，${tiredPlayer.name} 下场休息。`
+          : `${sideLabel(locale, side)} auto-sub: ${reservePlayer.name} checks in for ${tiredPlayer.name}.`,
     },
+  };
+}
+
+function maybeAiTimeout(state: BroadcastState, props: LiveMatchBroadcastProps): BroadcastState {
+  const aiSide = props.controlSide === "home" ? "away" : "home";
+  const aiTeam = aiSide === "home" ? props.homeTeam : props.awayTeam;
+  const diff = aiSide === "home" ? state.homeScore - state.awayScore : state.awayScore - state.homeScore;
+  const shouldCall = state.timeouts[aiSide] > 0 && diff < -6 && state.clockSeconds < 7 * 60 && state.clockSeconds > 90;
+
+  if (!shouldCall) {
+    return state;
+  }
+
+  const stamina = { ...state.stamina };
+  for (const playerId of state.onCourt[aiSide]) {
+    stamina[playerId] = Math.min(100, (stamina[playerId] ?? 80) + 7);
+  }
+
+  return {
+    ...state,
+    stamina,
+    boosts: {
+      ...state.boosts,
+      [aiSide]: state.boosts[aiSide] + 2,
+    },
+    timeouts: {
+      ...state.timeouts,
+      [aiSide]: state.timeouts[aiSide] - 1,
+    },
+    logs: [
+      ...state.logs,
+      {
+        id: `ai-timeout-${state.playCount}`,
+        quarter: state.quarter,
+        side: aiSide,
+        tone: "timeout",
+        text:
+          props.locale === "zh"
+            ? `${aiTeam.abbreviation} 被打停后主动叫暂停，重新布置接下来的攻防。`
+            : `${aiTeam.abbreviation} stop the run with a timeout and reset both ends.`,
+      },
+    ],
   };
 }
 
@@ -273,7 +336,18 @@ function createScoringText(params: {
 }) {
   const { locale, team, opponent, scorer, points, tactic, quarter } = params;
   const scorerName = scorer?.name ?? (locale === "zh" ? `${team.abbreviation} 核心球员` : `${team.abbreviation} star`);
-  const scoreWord = points === 3 ? (locale === "zh" ? "命中三分" : "buries a triple") : points === 1 ? (locale === "zh" ? "罚球命中" : "hits the free throw") : locale === "zh" ? "完成进攻" : "finishes the possession";
+  const scoreWord =
+    points === 3
+      ? locale === "zh"
+        ? "命中三分"
+        : "buries a triple"
+      : points === 1
+        ? locale === "zh"
+          ? "罚球命中"
+          : "hits the free throw"
+        : locale === "zh"
+          ? "完成进攻"
+          : "finishes the possession";
   const tacticTail =
     tactic === "push"
       ? locale === "zh"
@@ -307,7 +381,7 @@ function advanceBroadcast(
     return { ...previous, running: false, completed: true };
   }
 
-  let state = {
+  let state: BroadcastState = {
     ...previous,
     playCount: previous.playCount + 1,
     boosts: {
@@ -321,12 +395,7 @@ function advanceBroadcast(
 
   for (const side of ["home", "away"] as const) {
     for (const playerId of state.onCourt[side]) {
-      const drain =
-        side === "home" && state.tactics[side] === "push"
-          ? 4
-          : state.tactics[side] === "defend"
-            ? 2
-            : 3;
+      const drain = state.tactics[side] === "push" ? 4 : state.tactics[side] === "defend" ? 2 : 3;
       state.stamina[playerId] = Math.max(26, (state.stamina[playerId] ?? 100) - drain);
     }
   }
@@ -336,6 +405,9 @@ function advanceBroadcast(
   const actingTeam = scoringSide === "home" ? props.homeTeam : props.awayTeam;
   const defendingTeam = scoringSide === "home" ? props.awayTeam : props.homeTeam;
   const scorer = chooseScorer(playerMap, state.onCourt[scoringSide], state.tactics[scoringSide]);
+
+  state.possession = scoringSide;
+  state.hotPlayerId = scorer?.id ?? null;
 
   if (scoringSide === "home") {
     state.homeScore += points;
@@ -360,6 +432,7 @@ function advanceBroadcast(
   });
 
   state.clockSeconds = Math.max(0, state.clockSeconds - (18 + ((state.playCount * 7) % 17)));
+  state = maybeAiTimeout(state, props);
 
   const homeSub = maybeAutoSubstitute(state, "home", playerMap, props.locale);
   state = homeSub.state;
@@ -403,6 +476,31 @@ function advanceBroadcast(
 
   return state;
 }
+function PlayerDot({
+  player,
+  side,
+  active,
+  hot,
+  locale,
+}: {
+  player: BroadcastPlayer;
+  side: TeamSide;
+  active: boolean;
+  hot: boolean;
+  locale: Locale;
+}) {
+  const position = courtPositions[player.position] ?? courtPositions.SF;
+  return (
+    <div
+      className={`court-player ${side === "home" ? "court-player-home" : "court-player-away"} ${active ? "court-player-active" : ""} ${hot ? "court-player-hot" : ""}`}
+      style={{ left: position.left, top: position.top }}
+    >
+      <div className="court-player-badge">{player.position}</div>
+      <div className="court-player-name">{shortName(player.name)}</div>
+      <div className="court-player-stamina">{locale === "zh" ? "体" : "STA"} {player.stamina}</div>
+    </div>
+  );
+}
 
 export function LiveMatchBroadcast(props: LiveMatchBroadcastProps) {
   const playerMap = useMemo(() => getPlayerMap(props.homeTeam, props.awayTeam), [props.homeTeam, props.awayTeam]);
@@ -411,6 +509,8 @@ export function LiveMatchBroadcast(props: LiveMatchBroadcastProps) {
   const opponentSide = props.controlSide === "home" ? "away" : "home";
   const controlOnCourt = state.onCourt[props.controlSide].map((playerId) => playerMap.get(playerId)).filter(Boolean) as BroadcastPlayer[];
   const controlBench = state.bench[props.controlSide].map((playerId) => playerMap.get(playerId)).filter(Boolean) as BroadcastPlayer[];
+  const awayOnCourt = state.onCourt.away.map((playerId) => playerMap.get(playerId)).filter(Boolean) as BroadcastPlayer[];
+  const homeOnCourt = state.onCourt.home.map((playerId) => playerMap.get(playerId)).filter(Boolean) as BroadcastPlayer[];
 
   const tick = useEffectEvent(() => {
     setState((previous) => advanceBroadcast(previous, props, playerMap));
@@ -541,6 +641,9 @@ export function LiveMatchBroadcast(props: LiveMatchBroadcastProps) {
     setState(buildInitialState(props));
   };
 
+  const currentLeader =
+    state.homeScore === state.awayScore ? null : state.homeScore > state.awayScore ? props.homeTeam.abbreviation : props.awayTeam.abbreviation;
+
   return (
     <div className="grid gap-6">
       <section className="overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(2,6,23,0.92),rgba(15,23,42,0.85))] p-5 shadow-xl shadow-slate-950/30">
@@ -561,25 +664,15 @@ export function LiveMatchBroadcast(props: LiveMatchBroadcastProps) {
               </div>
             </div>
             <p className="text-sm text-slate-300">
-              {quarterLabels[state.quarter - 1] ?? "FT"} • {formatClock(state.clockSeconds)} •{" "}
-              {props.locale === "zh" ? `你当前控制 ${controlTeam.abbreviation}` : `You control ${controlTeam.abbreviation}`}
+              {quarterLabels[state.quarter - 1] ?? "FT"} • {formatClock(state.clockSeconds)} • {currentLeader ? `${currentLeader} ${props.locale === "zh" ? "占优" : "have the edge"}` : props.locale === "zh" ? "比分胶着" : "Game tied"}
             </p>
           </div>
 
           <div className="grid gap-3 md:grid-cols-3">
             {[
-              {
-                label: props.locale === "zh" ? "当前战术" : "Current tactic",
-                value: tacticLabel(props.locale, state.tactics[props.controlSide]),
-              },
-              {
-                label: props.locale === "zh" ? "剩余暂停" : "Timeouts left",
-                value: String(state.timeouts[props.controlSide]),
-              },
-              {
-                label: props.locale === "zh" ? "平均体力" : "Average stamina",
-                value: `${Math.round(averageStamina(state, props.controlSide))}`,
-              },
+              { label: props.locale === "zh" ? "当前战术" : "Current tactic", value: tacticLabel(props.locale, state.tactics[props.controlSide]) },
+              { label: props.locale === "zh" ? "剩余暂停" : "Timeouts left", value: String(state.timeouts[props.controlSide]) },
+              { label: props.locale === "zh" ? "平均体力" : "Average stamina", value: `${Math.round(averageStamina(state, props.controlSide))}` },
             ].map((item) => (
               <div key={item.label} className="rounded-[20px] border border-white/10 bg-slate-950/55 px-4 py-3">
                 <p className="text-[11px] uppercase tracking-[0.22em] text-slate-400">{item.label}</p>
@@ -590,31 +683,51 @@ export function LiveMatchBroadcast(props: LiveMatchBroadcastProps) {
         </div>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+      <div className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
         <section className="grid gap-4">
+          <div className="overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,18,35,0.94),rgba(15,23,42,0.88))] p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">{props.locale === "zh" ? "球场视图" : "Court view"}</p>
+                <p className="mt-1 text-sm text-slate-300">{props.locale === "zh" ? "当前控球方、热点球员和场上站位会随着直播推进更新。" : "Possession, hot player, and on-court spots update as the live feed advances."}</p>
+              </div>
+              <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-200">
+                <span className={`h-2.5 w-2.5 rounded-full ${state.possession === "home" ? "bg-amber-300" : "bg-cyan-300"}`} />
+                {props.locale === "zh" ? `${state.possession === "home" ? props.homeTeam.abbreviation : props.awayTeam.abbreviation} 控球` : `${state.possession === "home" ? props.homeTeam.abbreviation : props.awayTeam.abbreviation} possession`}
+              </div>
+            </div>
+
+            <div className="court-shell mt-4">
+              <div className="court-half court-away">
+                <div className="court-rim court-rim-away" />
+                <div className="court-key court-key-away" />
+                {awayOnCourt.map((player) => (
+                  <PlayerDot key={player.id} player={{ ...player, stamina: Math.round(state.stamina[player.id] ?? player.stamina) }} side="away" active={state.possession === "away" && state.onCourt.away.includes(player.id)} hot={state.hotPlayerId === player.id} locale={props.locale} />
+                ))}
+              </div>
+              <div className="court-midline" />
+              <div className="court-center-circle" />
+              <div className="court-half court-home">
+                <div className="court-rim court-rim-home" />
+                <div className="court-key court-key-home" />
+                {homeOnCourt.map((player) => (
+                  <PlayerDot key={player.id} player={{ ...player, stamina: Math.round(state.stamina[player.id] ?? player.stamina) }} side="home" active={state.possession === "home" && state.onCourt.home.includes(player.id)} hot={state.hotPlayerId === player.id} locale={props.locale} />
+                ))}
+              </div>
+            </div>
+          </div>
+
           <div className="overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,18,35,0.92),rgba(15,23,42,0.88))] p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">
-                  {props.locale === "zh" ? "直播事件流" : "Live feed"}
-                </p>
-                <p className="mt-1 text-sm text-slate-300">
-                  {props.locale === "zh" ? "比赛会自动推进，你可以随时暂停并进行临场调整。" : "The game advances automatically while you make sideline adjustments."}
-                </p>
+                <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">{props.locale === "zh" ? "直播事件流" : "Live feed"}</p>
+                <p className="mt-1 text-sm text-slate-300">{props.locale === "zh" ? "比赛会自动推进，你可以随时暂停并进行临场调整。" : "The game advances automatically while you make sideline adjustments."}</p>
               </div>
               <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setState((previous) => ({ ...previous, running: !previous.running }))}
-                  className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
-                >
+                <button type="button" onClick={() => setState((previous) => ({ ...previous, running: !previous.running }))} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10">
                   {state.running ? (props.locale === "zh" ? "暂停直播" : "Pause") : props.locale === "zh" ? "继续直播" : "Resume"}
                 </button>
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  className="rounded-full border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-sm font-semibold text-amber-100 transition hover:bg-amber-300/18"
-                >
+                <button type="button" onClick={handleReset} className="rounded-full border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-sm font-semibold text-amber-100 transition hover:bg-amber-300/18">
                   {props.locale === "zh" ? "重新播放" : "Replay"}
                 </button>
               </div>
@@ -624,81 +737,21 @@ export function LiveMatchBroadcast(props: LiveMatchBroadcastProps) {
               {state.logs.slice(-10).reverse().map((log) => (
                 <div key={log.id} className="rounded-[18px] border border-white/8 bg-white/5 px-4 py-3">
                   <div className="flex items-start gap-3">
-                    <span className="mt-0.5 rounded-full border border-amber-300/20 bg-amber-300/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-amber-100">
-                      {quarterLabels[log.quarter - 1] ?? "FT"}
-                    </span>
+                    <span className="mt-0.5 rounded-full border border-amber-300/20 bg-amber-300/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-amber-100">{quarterLabels[log.quarter - 1] ?? "FT"}</span>
                     <p className="text-sm text-slate-200">{log.text}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            {([
-              { side: "away", team: props.awayTeam },
-              { side: "home", team: props.homeTeam },
-            ] as const).map(({ side, team }) => (
-              <div key={team.id} className="overflow-hidden rounded-[24px] border border-white/10 bg-slate-950/50 p-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-white">{team.name}</h3>
-                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.2em] text-slate-300">
-                    {side === props.controlSide ? (props.locale === "zh" ? "你控制" : "Controlled") : props.locale === "zh" ? "AI 控制" : "AI"}
-                  </span>
-                </div>
-                <div className="mt-4 grid gap-3">
-                  {state.onCourt[side].map((playerId) => {
-                    const player = playerMap.get(playerId);
-                    if (!player) return null;
-                    const stamina = state.stamina[playerId] ?? 0;
-                    return (
-                      <div key={playerId} className="rounded-[18px] border border-white/8 bg-white/4 px-4 py-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <p className="font-semibold text-white">{player.name}</p>
-                            <p className="text-xs uppercase tracking-[0.18em] text-slate-400">
-                              {player.position} • OVR {player.overall}
-                            </p>
-                          </div>
-                          <div className="min-w-22 text-right">
-                            <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
-                              {props.locale === "zh" ? "体力" : "Stamina"}
-                            </p>
-                            <p className="text-lg font-semibold text-white">{Math.round(stamina)}</p>
-                          </div>
-                        </div>
-                        <div className="mt-2 h-2 rounded-full bg-white/8">
-                          <div
-                            className={`h-2 rounded-full ${stamina > 65 ? "bg-[linear-gradient(90deg,#22c55e,#38bdf8)]" : stamina > 45 ? "bg-[linear-gradient(90deg,#facc15,#fb7185)]" : "bg-[linear-gradient(90deg,#fb7185,#ef4444)]"}`}
-                            style={{ width: `${Math.max(8, Math.min(100, stamina))}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
         </section>
 
         <aside className="grid gap-4">
           <section className="rounded-[24px] border border-white/10 bg-slate-950/50 p-4">
-            <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">
-              {props.locale === "zh" ? "临场战术" : "Tactics"}
-            </p>
+            <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">{props.locale === "zh" ? "临场战术" : "Tactics"}</p>
             <div className="mt-3 grid gap-2">
               {(["balanced", "push", "defend"] as const).map((tactic) => (
-                <button
-                  key={tactic}
-                  type="button"
-                  onClick={() => handleTacticChange(tactic)}
-                  className={`rounded-2xl border px-4 py-3 text-left text-sm font-semibold transition ${
-                    state.tactics[props.controlSide] === tactic
-                      ? "border-amber-300/35 bg-amber-300/12 text-amber-100"
-                      : "border-white/10 bg-white/5 text-slate-100 hover:bg-white/10"
-                  }`}
-                >
+                <button key={tactic} type="button" onClick={() => handleTacticChange(tactic)} className={`rounded-2xl border px-4 py-3 text-left text-sm font-semibold transition ${state.tactics[props.controlSide] === tactic ? "border-amber-300/35 bg-amber-300/12 text-amber-100" : "border-white/10 bg-white/5 text-slate-100 hover:bg-white/10"}`}>
                   {tacticLabel(props.locale, tactic)}
                 </button>
               ))}
@@ -707,72 +760,41 @@ export function LiveMatchBroadcast(props: LiveMatchBroadcastProps) {
 
           <section className="rounded-[24px] border border-white/10 bg-slate-950/50 p-4">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">
-                {props.locale === "zh" ? "暂停与布置" : "Timeout"}
-              </p>
-              <span className="text-xs text-slate-500">
-                {props.locale === "zh" ? `还剩 ${state.timeouts[props.controlSide]} 次` : `${state.timeouts[props.controlSide]} left`}
-              </span>
+              <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">{props.locale === "zh" ? "暂停与布置" : "Timeout"}</p>
+              <span className="text-xs text-slate-500">{props.locale === "zh" ? `还剩 ${state.timeouts[props.controlSide]} 次` : `${state.timeouts[props.controlSide]} left`}</span>
             </div>
-            <button
-              type="button"
-              onClick={handleTimeout}
-              disabled={state.timeouts[props.controlSide] <= 0}
-              className="mt-3 w-full rounded-2xl border border-cyan-300/25 bg-cyan-300/12 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-40"
-            >
+            <button type="button" onClick={handleTimeout} disabled={state.timeouts[props.controlSide] <= 0} className="mt-3 w-full rounded-2xl border border-cyan-300/25 bg-cyan-300/12 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-40">
               {props.locale === "zh" ? "叫暂停并恢复体力" : "Call timeout and recover stamina"}
             </button>
           </section>
 
           <section className="rounded-[24px] border border-white/10 bg-slate-950/50 p-4">
-            <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">
-              {props.locale === "zh" ? "换人调整" : "Substitution"}
-            </p>
-            <form
-              action={handleSubstitution}
-              className="mt-3 grid gap-3"
-            >
+            <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">{props.locale === "zh" ? "换人调整" : "Substitution"}</p>
+            <form action={handleSubstitution} className="mt-3 grid gap-3">
               <label className="grid gap-2">
                 <span className="text-sm text-slate-300">{props.locale === "zh" ? "下场球员" : "Player out"}</span>
-                <select
-                  name="outPlayerId"
-                  className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white"
-                  defaultValue={controlOnCourt[0]?.id}
-                >
+                <select name="outPlayerId" className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white" defaultValue={controlOnCourt[0]?.id}>
                   {controlOnCourt.map((player) => (
-                    <option key={player.id} value={player.id}>
-                      {player.name} • {Math.round(state.stamina[player.id] ?? 0)}
-                    </option>
+                    <option key={player.id} value={player.id}>{player.name} • {Math.round(state.stamina[player.id] ?? 0)}</option>
                   ))}
                 </select>
               </label>
               <label className="grid gap-2">
                 <span className="text-sm text-slate-300">{props.locale === "zh" ? "上场球员" : "Player in"}</span>
-                <select
-                  name="inPlayerId"
-                  className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white"
-                  defaultValue={controlBench[0]?.id}
-                >
+                <select name="inPlayerId" className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white" defaultValue={controlBench[0]?.id}>
                   {controlBench.map((player) => (
-                    <option key={player.id} value={player.id}>
-                      {player.name} • {Math.round(state.stamina[player.id] ?? 0)}
-                    </option>
+                    <option key={player.id} value={player.id}>{player.name} • {Math.round(state.stamina[player.id] ?? 0)}</option>
                   ))}
                 </select>
               </label>
-              <button
-                type="submit"
-                className="rounded-2xl border border-violet-300/25 bg-violet-300/12 px-4 py-3 text-sm font-semibold text-violet-100 transition hover:bg-violet-300/20"
-              >
+              <button type="submit" className="rounded-2xl border border-violet-300/25 bg-violet-300/12 px-4 py-3 text-sm font-semibold text-violet-100 transition hover:bg-violet-300/20">
                 {props.locale === "zh" ? "执行换人" : "Make substitution"}
               </button>
             </form>
           </section>
 
           <section className="rounded-[24px] border border-white/10 bg-slate-950/50 p-4">
-            <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">
-              {props.locale === "zh" ? "对手信息" : "Opponent bench"}
-            </p>
+            <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">{props.locale === "zh" ? "对手替补席" : "Opponent bench"}</p>
             <div className="mt-3 grid gap-2">
               {state.bench[opponentSide].map((playerId) => {
                 const player = playerMap.get(playerId);
@@ -780,9 +802,7 @@ export function LiveMatchBroadcast(props: LiveMatchBroadcastProps) {
                 return (
                   <div key={playerId} className="rounded-2xl border border-white/8 bg-white/4 px-4 py-3">
                     <p className="font-semibold text-white">{player.name}</p>
-                    <p className="text-xs text-slate-400">
-                      {player.position} • {props.locale === "zh" ? "体力" : "STA"} {Math.round(state.stamina[playerId] ?? 0)}
-                    </p>
+                    <p className="text-xs text-slate-400">{player.position} • {props.locale === "zh" ? "体力" : "STA"} {Math.round(state.stamina[playerId] ?? 0)}</p>
                   </div>
                 );
               })}
