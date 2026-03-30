@@ -1,4 +1,5 @@
 ﻿import { AppShell } from "@/components/app-shell";
+import { LiveMatchCenter } from "@/components/live-match-center";
 import { SectionCard } from "@/components/ui";
 import { getGameSnapshot } from "@/lib/game-state";
 import { buildNav, copy, getLocale, translateMatchSummary, type Locale } from "@/lib/i18n";
@@ -108,150 +109,29 @@ export default async function SchedulePage() {
                     </div>
                     {match.played ? (
                       <div className="mt-3 grid gap-4 text-sm text-slate-300">
-                        <div className="live-center-shell rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))] p-4">
-                          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                            <div>
-                              <p className="text-[11px] uppercase tracking-[0.28em] text-amber-200">
-                                {locale === "zh" ? "比赛直播中心" : "Live Match Center"}
-                              </p>
-                              <p className="mt-2 text-sm text-slate-200">
-                                {locale === "zh"
-                                  ? `${match.homeTeam.abbreviation} 与 ${match.awayTeam.abbreviation} 的比赛节奏、关键回合和末节走势汇总如下。`
-                                  : `A quick look at the pace, swing moments, and closing stretch between ${match.homeTeam.abbreviation} and ${match.awayTeam.abbreviation}.`}
-                              </p>
-                            </div>
-                            <div className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-emerald-100">
-                              {locale === "zh" ? "实时风格回放" : "Live-style recap"}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="match-summary-banner rounded-[22px] px-4 py-3">
-                          <p className="text-sm text-slate-100">{translateMatchSummary(match.summary, locale)}</p>
-                        </div>
-
-                        <div className="grid gap-3 md:grid-cols-3">
-                          {[
-                            {
-                              label: locale === "zh" ? "主队关键先生" : "Home star",
-                              value: match.homeTopPerformer,
-                            },
-                            {
-                              label: locale === "zh" ? "客队关键先生" : "Away star",
-                              value: match.awayTopPerformer,
-                            },
-                            {
-                              label: locale === "zh" ? "分差" : "Margin",
-                              value: `${Math.abs((match.homeScore ?? 0) - (match.awayScore ?? 0))}`,
-                            },
-                          ].map((panel) => (
-                            <div key={panel.label} className="rounded-[20px] border border-white/10 bg-slate-950/55 px-4 py-3">
-                              <p className="text-[11px] uppercase tracking-[0.22em] text-slate-400">{panel.label}</p>
-                              <p className="mt-2 text-sm text-slate-100">{panel.value}</p>
-                            </div>
-                          ))}
-                        </div>
-
-                        <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-                          <div className="rounded-[22px] border border-white/10 bg-slate-950/55 p-4">
-                            <div className="flex items-center justify-between gap-3">
-                              <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">
-                                {locale === "zh" ? "关键回合" : "Play-by-play"}
-                              </p>
-                              <p className="text-xs text-slate-500">
-                                {locale === "zh" ? "模拟直播文本" : "Simulated live feed"}
-                              </p>
-                            </div>
-                            <div className="mt-4 grid gap-3">
-                              {buildPlayByPlay({
-                                locale,
-                                homeTeam: match.homeTeam,
-                                awayTeam: match.awayTeam,
-                                homeScore: match.homeScore ?? 0,
-                                awayScore: match.awayScore ?? 0,
-                                homeTopPerformer: match.homeTopPerformer,
-                                awayTopPerformer: match.awayTopPerformer,
-                                summary: match.summary,
-                              }).map((event, index) => (
-                                <div
-                                  key={`${match.id}-event-${index}`}
-                                  className="live-event rounded-[18px] border border-white/8 bg-white/5 px-4 py-3"
-                                  style={{ animationDelay: `${index * 120}ms` }}
-                                >
-                                  <div className="flex items-start gap-3">
-                                    <span className="mt-0.5 rounded-full border border-amber-300/20 bg-amber-300/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-amber-100">
-                                      {locale === "zh" ? `片段 ${index + 1}` : `Clip ${index + 1}`}
-                                    </span>
-                                    <p className="text-sm text-slate-200">{event}</p>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="rounded-[22px] border border-white/10 bg-slate-950/55 p-4">
-                            <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">
-                              {locale === "zh" ? "比赛走势" : "Momentum"}
-                            </p>
-                            <div className="mt-4 grid gap-3">
-                              {buildMomentumStops(match.homeScore ?? 0, match.awayScore ?? 0).map((swing, index) => {
-                                const positive = swing >= 0;
-                                const width = Math.min(100, Math.max(12, Math.abs(swing) * 2.4));
-                                return (
-                                  <div key={`${match.id}-momentum-${index}`} className="grid gap-2">
-                                    <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.18em] text-slate-400">
-                                      <span>{["Q1", "Q2", "Q3", "Q4"][index]}</span>
-                                      <span className={positive ? "text-cyan-200" : "text-amber-200"}>
-                                        {positive ? match.homeTeam.abbreviation : match.awayTeam.abbreviation}
-                                      </span>
-                                    </div>
-                                    <div className="h-3 rounded-full bg-white/8">
-                                      <div
-                                        className={`h-3 rounded-full ${positive ? "bg-[linear-gradient(90deg,rgba(34,211,238,0.95),rgba(59,130,246,0.75))]" : "bg-[linear-gradient(90deg,rgba(251,191,36,0.95),rgba(249,115,22,0.78))]"}`}
-                                        style={{ width: `${width}%` }}
-                                      />
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </div>
-
                         {quarters ? (
-                          <div className="overflow-hidden rounded-[22px] border border-white/10 bg-slate-950/55">
-                            <div className="grid grid-cols-6 border-b border-white/10 bg-white/5 text-[11px] uppercase tracking-[0.22em] text-slate-400">
-                              <div className="px-3 py-2">{locale === "zh" ? "球队" : "Team"}</div>
-                              {["Q1", "Q2", "Q3", "Q4"].map((quarter) => (
-                                <div key={quarter} className="px-3 py-2">
-                                  {quarter}
-                                </div>
-                              ))}
-                              <div className="px-3 py-2">{locale === "zh" ? "总分" : "Final"}</div>
-                            </div>
-                            {[
-                              {
-                                team: match.homeTeam.abbreviation,
-                                scores: quarters.home,
-                                final: match.homeScore,
-                              },
-                              {
-                                team: match.awayTeam.abbreviation,
-                                scores: quarters.away,
-                                final: match.awayScore,
-                              },
-                            ].map((row) => (
-                              <div key={`${match.id}-${row.team}-quarters`} className="grid grid-cols-6 border-t border-white/8 text-sm text-slate-100">
-                                <div className="px-3 py-3 font-semibold text-white">{row.team}</div>
-                                {row.scores.map((score, index) => (
-                                  <div key={`${row.team}-${index}`} className="px-3 py-3">
-                                    {score}
-                                  </div>
-                                ))}
-                                <div className="px-3 py-3 font-semibold text-amber-200">{row.final}</div>
-                              </div>
-                            ))}
-                          </div>
+                          <LiveMatchCenter
+                            locale={locale}
+                            homeTeam={match.homeTeam}
+                            awayTeam={match.awayTeam}
+                            homeScore={match.homeScore ?? 0}
+                            awayScore={match.awayScore ?? 0}
+                            homeTopPerformer={match.homeTopPerformer}
+                            awayTopPerformer={match.awayTopPerformer}
+                            summary={translateMatchSummary(match.summary, locale) ?? ""}
+                            events={buildPlayByPlay({
+                              locale,
+                              homeTeam: match.homeTeam,
+                              awayTeam: match.awayTeam,
+                              homeScore: match.homeScore ?? 0,
+                              awayScore: match.awayScore ?? 0,
+                              homeTopPerformer: match.homeTopPerformer,
+                              awayTopPerformer: match.awayTopPerformer,
+                              summary: match.summary,
+                            })}
+                            momentumStops={buildMomentumStops(match.homeScore ?? 0, match.awayScore ?? 0)}
+                            quarters={quarters}
+                          />
                         ) : null}
 
                         <div className="grid gap-4 lg:grid-cols-2">
