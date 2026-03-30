@@ -1,4 +1,4 @@
-import { AppShell } from "@/components/app-shell";
+﻿import { AppShell } from "@/components/app-shell";
 import {
   ResetLeagueButton,
   SimulateRoundButton,
@@ -16,40 +16,40 @@ function translateNewsItem(item: string, locale: Locale) {
 
   if (item.startsWith("Round ")) {
     return (translateMatchSummary(item, locale) ?? item)
-      .replace(/^Round (\d+): /, "第$1轮：")
-      .replace(" at ", " 对阵 ")
-      .replace(/Front office buzz: the starting five has found a strong rhythm\./, "球队简报：首发五人已经逐渐形成良好节奏。")
-      .replace(/Analysts are questioning the fit of your first unit\./, "分析师正在质疑你首发阵容的适配度。");
+      .replace(/^Round (\d+): /, "ç¬¬$1è½®ï¼š")
+      .replace(" at ", " å¯¹é˜µ ")
+      .replace(/Front office buzz: the starting five has found a strong rhythm\./, "çƒé˜Ÿç®€æŠ¥ï¼šé¦–å‘äº”äººå·²ç»é€æ¸å½¢æˆè‰¯å¥½èŠ‚å¥ã€‚")
+      .replace(/Analysts are questioning the fit of your first unit\./, "åˆ†æžå¸ˆæ­£åœ¨è´¨ç–‘ä½ é¦–å‘é˜µå®¹çš„é€‚é…åº¦ã€‚");
   }
   if (item.startsWith("Front office buzz:")) {
     return item.replace(
       "Front office buzz: the starting five has found a strong rhythm.",
-      "球队简报：首发五人已经逐渐形成良好节奏。",
+      "çƒé˜Ÿç®€æŠ¥ï¼šé¦–å‘äº”äººå·²ç»é€æ¸å½¢æˆè‰¯å¥½èŠ‚å¥ã€‚",
     ).replace("Natural starter positions are filled.", translateChemistryNote("Natural starter positions are filled.", locale));
   }
   if (item.startsWith("Analysts are questioning")) {
     return item.replace(
       "Analysts are questioning the fit of your first unit.",
-      "分析师正在质疑你首发阵容的适配度。",
+      "åˆ†æžå¸ˆæ­£åœ¨è´¨ç–‘ä½ é¦–å‘é˜µå®¹çš„é€‚é…åº¦ã€‚",
     ).replace("Starter role overlap hurts spacing and balance.", translateChemistryNote("Starter role overlap hurts spacing and balance.", locale));
   }
   if (item.startsWith("Contract watch:")) {
     return item.replace(
       /^Contract watch: (.+) is entering the danger zone on negotiations\.$/,
-      "合同观察：$1 的续约谈判已经进入关键阶段。",
+      "åˆåŒè§‚å¯Ÿï¼š$1 çš„ç»­çº¦è°ˆåˆ¤å·²ç»è¿›å…¥å…³é”®é˜¶æ®µã€‚",
     );
   }
   if (item === "Finance desk: the club is operating above the soft cap and needs salary relief.") {
-    return "财务简报：球队目前已经超过软工资帽，需要尽快释放薪资空间。";
+    return "è´¢åŠ¡ç®€æŠ¥ï¼šçƒé˜Ÿç›®å‰å·²ç»è¶…è¿‡è½¯å·¥èµ„å¸½ï¼Œéœ€è¦å°½å¿«é‡Šæ”¾è–ªèµ„ç©ºé—´ã€‚";
   }
   if (item === "Finance desk: cap room is getting tight, so every signing decision matters.") {
-    return "财务简报：薪资空间已经非常紧张，每一次签约都需要谨慎。";
+    return "è´¢åŠ¡ç®€æŠ¥ï¼šè–ªèµ„ç©ºé—´å·²ç»éžå¸¸ç´§å¼ ï¼Œæ¯ä¸€æ¬¡ç­¾çº¦éƒ½éœ€è¦è°¨æ…Žã€‚";
   }
   if (item.startsWith("Season finale:")) {
-    return item.replace(/^Season finale: (.+) claimed the title\.$/, "赛季总结：$1 最终夺得冠军。");
+    return item.replace(/^Season finale: (.+) claimed the title\.$/, "èµ›å­£æ€»ç»“ï¼š$1 æœ€ç»ˆå¤ºå¾—å† å†›ã€‚");
   }
   if (item.startsWith("Award season:")) {
-    return item.replace(/^Award season: (.+) headlines the MVP vote\.$/, "奖项速递：$1 领跑 MVP 评选。");
+    return item.replace(/^Award season: (.+) headlines the MVP vote\.$/, "å¥–é¡¹é€Ÿé€’ï¼š$1 é¢†è·‘ MVP è¯„é€‰ã€‚");
   }
 
   return [
@@ -122,7 +122,7 @@ export default async function Home() {
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <p className="font-medium text-white">
                         {locale === "zh"
-                          ? `第${match.round}轮：${match.awayTeam.abbreviation} ${match.awayScore} 对阵 ${match.homeTeam.abbreviation} ${match.homeScore}`
+                          ? `ç¬¬${match.round}è½®ï¼š${match.awayTeam.abbreviation} ${match.awayScore} å¯¹é˜µ ${match.homeTeam.abbreviation} ${match.homeScore}`
                           : `Round ${match.round}: ${match.awayTeam.abbreviation} ${match.awayScore} at ${match.homeTeam.abbreviation} ${match.homeScore}`}
                       </p>
                       <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{translateMatchSummary(match.summary, locale)}</p>
@@ -188,10 +188,10 @@ export default async function Home() {
             <SectionCard title={t.home.seasonComplete}>
               <div className="grid gap-3">
                 <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
-                  {t.home.champion}: {snapshot.seasonAwards.champion?.name ?? "TBD"}
+                  {t.home.champion}: {snapshot.seasonAwards.champion?.name ?? (locale === "zh" ? "待定" : "TBD")}
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
-                  MVP: {snapshot.seasonAwards.mvp ? `${snapshot.seasonAwards.mvp.player.firstName} ${snapshot.seasonAwards.mvp.player.lastName}` : "TBD"}
+                  {locale === "zh" ? "联赛MVP" : "MVP"}: {snapshot.seasonAwards.mvp ? `${snapshot.seasonAwards.mvp.player.firstName} ${snapshot.seasonAwards.mvp.player.lastName}` : (locale === "zh" ? "待定" : "TBD")}
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
                   {t.home.renewHint}
@@ -265,9 +265,9 @@ export default async function Home() {
             <div className="grid gap-3">
               {snapshot.nextMatches.map((match) => (
                 <article key={match.id} className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
-                  <p className="font-semibold text-white">{locale === "zh" ? `第${match.round}轮` : `Round ${match.round}`}</p>
+                  <p className="font-semibold text-white">{locale === "zh" ? `ç¬¬${match.round}è½®` : `Round ${match.round}`}</p>
                   <p className="mt-2">
-                    {match.awayTeam.name} {locale === "zh" ? "对阵" : "at"} {match.homeTeam.name}
+                    {match.awayTeam.name} {locale === "zh" ? "å¯¹é˜µ" : "at"} {match.homeTeam.name}
                   </p>
                 </article>
               ))}

@@ -164,7 +164,8 @@ export async function setLanguageAction(
 ) {
   const locale = String(formData.get("locale") ?? "");
   if (!isLocale(locale)) {
-    return { ok: false as const, message: "Unknown language." };
+    const currentLocale = await getLocale();
+    return { ok: false as const, message: translateServerMessage("Unknown language.", currentLocale) };
   }
   await setLocaleCookie(locale);
   refreshLeaguePaths();
