@@ -125,6 +125,27 @@ function shortName(name: string) {
   return name.split(" ").slice(-1)[0] ?? name;
 }
 
+function motionOffsets(playerId: string, playCount: number, side: TeamSide, active: boolean) {
+  const seed = [...playerId].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  const phase = playCount + seed;
+  const driftX = ((phase % 5) - 2) * (active ? 4 : 2);
+  const driftY = (((Math.floor(phase / 3) % 5) - 2) * (active ? 5 : 2)) * (side === "home" ? -1 : 1);
+  return { driftX, driftY };
+}
+
+function ballPosition(player: BroadcastPlayer | null, playCount: number) {
+  if (!player) {
+    return { left: "50%", top: "50%", transform: "translate(-50%, -50%)" };
+  }
+  const position = courtPositions[player.position] ?? courtPositions.SF;
+  const { driftX, driftY } = motionOffsets(player.id, playCount, "home", true);
+  return {
+    left: position.left,
+    top: position.top,
+    transform: `translate(calc(-50% + ${driftX + 42}px), calc(-50% + ${driftY - 26}px))`,
+  };
+}
+
 function buildInitialState({ homeTeam, awayTeam, quarterLines, locale }: LiveMatchBroadcastProps): BroadcastState {
   const stamina = Object.fromEntries(
     [...homeTeam.players, ...awayTeam.players].map((player) => [player.id, Math.min(100, player.stamina)]),
@@ -482,18 +503,25 @@ function PlayerDot({
   active,
   hot,
   locale,
+  playCount,
 }: {
   player: BroadcastPlayer;
   side: TeamSide;
   active: boolean;
   hot: boolean;
   locale: Locale;
+  playCount: number;
 }) {
   const position = courtPositions[player.position] ?? courtPositions.SF;
+  const { driftX, driftY } = motionOffsets(player.id, playCount, side, active);
   return (
     <div
       className={`court-player ${side === "home" ? "court-player-home" : "court-player-away"} ${active ? "court-player-active" : ""} ${hot ? "court-player-hot" : ""}`}
-      style={{ left: position.left, top: position.top }}
+      style={{
+        left: position.left,
+        top: position.top,
+        transform: `translate(calc(-50% + ${driftX}px), calc(-50% + ${driftY}px))`,
+      }}
     >
       <div className="court-player-badge">{player.position}</div>
       <div className="court-player-name">{shortName(player.name)}</div>
@@ -511,6 +539,10 @@ export function LiveMatchBroadcast(props: LiveMatchBroadcastProps) {
   const controlBench = state.bench[props.controlSide].map((playerId) => playerMap.get(playerId)).filter(Boolean) as BroadcastPlayer[];
   const awayOnCourt = state.onCourt.away.map((playerId) => playerMap.get(playerId)).filter(Boolean) as BroadcastPlayer[];
   const homeOnCourt = state.onCourt.home.map((playerId) => playerMap.get(playerId)).filter(Boolean) as BroadcastPlayer[];
+  const ballHandler =
+    (state.hotPlayerId ? playerMap.get(state.hotPlayerId) : null) ??
+    (state.possession === "home" ? homeOnCourt[0] : awayOnCourt[0]) ??
+    null;
 
   const tick = useEffectEvent(() => {
     setState((previous) => advanceBroadcast(previous, props, playerMap));
@@ -698,11 +730,17 @@ export function LiveMatchBroadcast(props: LiveMatchBroadcastProps) {
             </div>
 
             <div className="court-shell mt-4">
+              <div className="court-possession-tag">
+                {props.locale === "zh"
+                  ? `${state.possession === "home" ? props.homeTeam.abbreviation : props.awayTeam.abbreviation} 持球推进`
+                  : `${state.possession === "home" ? props.homeTeam.abbreviation : props.awayTeam.abbreviation} bringing it up`}
+              </div>
+              <div className="court-ball" style={ballPosition(ballHandler, state.playCount)} />
               <div className="court-half court-away">
                 <div className="court-rim court-rim-away" />
                 <div className="court-key court-key-away" />
                 {awayOnCourt.map((player) => (
-                  <PlayerDot key={player.id} player={{ ...player, stamina: Math.round(state.stamina[player.id] ?? player.stamina) }} side="away" active={state.possession === "away" && state.onCourt.away.includes(player.id)} hot={state.hotPlayerId === player.id} locale={props.locale} />
+                  <PlayerDot key={player.id} player={{ ...player, stamina: Math.round(state.stamina[player.id] ?? player.stamina) }} side="away" active={state.possession === "away" && state.onCourt.away.includes(player.id)} hot={state.hotPlayerId === player.id} locale={props.locale} playCount={state.playCount} />
                 ))}
               </div>
               <div className="court-midline" />
@@ -711,7 +749,7 @@ export function LiveMatchBroadcast(props: LiveMatchBroadcastProps) {
                 <div className="court-rim court-rim-home" />
                 <div className="court-key court-key-home" />
                 {homeOnCourt.map((player) => (
-                  <PlayerDot key={player.id} player={{ ...player, stamina: Math.round(state.stamina[player.id] ?? player.stamina) }} side="home" active={state.possession === "home" && state.onCourt.home.includes(player.id)} hot={state.hotPlayerId === player.id} locale={props.locale} />
+                  <PlayerDot key={player.id} player={{ ...player, stamina: Math.round(state.stamina[player.id] ?? player.stamina) }} side="home" active={state.possession === "home" && state.onCourt.home.includes(player.id)} hot={state.hotPlayerId === player.id} locale={props.locale} playCount={state.playCount} />
                 ))}
               </div>
             </div>
